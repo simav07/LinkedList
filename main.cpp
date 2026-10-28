@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <ctype.h>
 
 #include "include/colors.h"
 #include "include/errors.h"
@@ -41,7 +40,9 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
 err_t PushFront(listResources * linkedList, listElem_t val);
 
-void ListDump(FILE * stream, listResources * linkedList);
+err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position);
+
+void ListDump(FILE * stream, const listResources * linkedList);
 /*
 err_t GetFreeCell(next);
 
@@ -71,6 +72,11 @@ int main() {
         ListDump(stdout, &linkedList);
 
     }
+
+    PushAfter(&linkedList, 67, 1);
+    ListDump(stdout, &linkedList);
+    PushAfter(&linkedList, 67, 1);
+    ListDump(stdout, &linkedList);
 
     return 0;
 }
@@ -188,6 +194,29 @@ err_t Erase(pos) {
 }
 */
 
+err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position) {
+
+    ASSERT(linkedList);
+    
+    listIndex newIndex = -1;
+    if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
+        printf("Error of searching a free cell\n");
+        return ERR_PUSHFRONT;
+    }
+
+    listIndex oldNext = linkedList->List[position].next;
+
+    listMember newMember = {.value = value, .next = oldNext, .prev = position};
+
+    linkedList->List[position].next = newIndex;
+    linkedList->List[oldNext].prev = newIndex;
+
+    linkedList->List[newIndex] = newMember;
+
+    return ERR_OK;
+
+}
+
 /*
 err_t PushAfter(val, pos) {
 
@@ -198,7 +227,6 @@ err_t PushAfter(val, pos) {
 
     listMember newMember = {.value = val, .prev = pos};
 
-    List[oldNext].prev   = newIndex;
     List[oldPrev].next = newIndex;
 
     List[newIndex] = newMember;
@@ -209,7 +237,7 @@ err_t PushAfter(val, pos) {
 }
 */
 
-void ListDump(FILE * stream, listResources * linkedList) {
+void ListDump(FILE * stream, const listResources * linkedList) {
 
     ASSERT(linkedList);
     ASSERT(stream);
