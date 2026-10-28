@@ -75,7 +75,7 @@ int main() {
 
     }
 
-    PushAfter(&linkedList, 67, 1);
+    PushAfter(&linkedList, 69, 1);
     ListDump(stdout, &linkedList);
     PushAfter(&linkedList, 67, 1);
     ListDump(stdout, &linkedList);
@@ -238,27 +238,30 @@ void ListDump(FILE * stream, const listResources * linkedList) {
     ASSERT(linkedList);
     ASSERT(stream);
 
-    fprintf(stream, "\n           <<<<< LIST DUMP >>>>>         \n");
-    fprintf(stream, "_________________________________________\n");
-    fprintf(stream, "| INDEX |    VALUE    | PREVIOUS | NEXT |\n");
-    fprintf(stream, "-----------------------------------------\n");
+    fprintf(stream, "\n              <<<<< LIST DUMP >>>>>             \n");
+    fprintf(stream, "__________________________________________________\n");
+    fprintf(stream, "|   INDEX   |    VALUE    | PREVIOUS |    NEXT   |\n");
+    fprintf(stream, "--------------------------------------------------\n");
     
     for (size_t i = 0; i < linkedList->capacity; i++) {
         
-        char indexStr[7]  = "";
+        char indexStr[11]  = "";
         char valueStr[13] = "";
         char prevStr [10] = "";
-        char nextStr [6]  = "";
+        char nextStr [11]  = "";
 
-        snprintf(indexStr, 7, "%zu", i);
+        if (i == linkedList->head)      snprintf(indexStr, 11, "[H] %zu", i);
+        else if (i == linkedList->tail) snprintf(indexStr, 11, "[T] %zu", i);
+        else                            snprintf(indexStr, 11, "%zu", i);
+
         snprintf(valueStr, 13, LIST_ELEM_FORMAT, linkedList->List[i].value);
         snprintf(prevStr, 10, "%zd", linkedList->List[i].prev);
-        snprintf(nextStr, 6, "%zd", linkedList->List[i].next);
+        snprintf(nextStr, 11, "%zd", linkedList->List[i].next);
 
-        fprintf(stream, "|%7s|%13s|%10s|%6s|\n", indexStr, valueStr, prevStr, nextStr);
+        fprintf(stream, "|%11s|%13s|%10s|%11s|\n", indexStr, valueStr, prevStr, nextStr);
 
     }
-    fprintf(stream, "_________________________________________\n");
+    fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
 }
