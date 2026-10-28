@@ -1,3 +1,7 @@
+// TODO: Erase(pos)
+// TODO: Verify
+// TODO: Insert
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -44,10 +48,6 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
 
 void ListDump(FILE * stream, const listResources * linkedList);
 /*
-err_t GetFreeCell(next);
-
-err_t PushBack(val);
-err_t PushFront(val);
 
 err_t Erase(pos);
 
@@ -107,12 +107,6 @@ err_t ListCtor(listResources * linkedList) {
 
     linkedList->List[linkedList->tail] = initTail;
     linkedList->List[linkedList->head] = initHead;
-
-    // linkedList->List[linkedList->tail].next = linkedList->head;
-    // linkedList->List[linkedList->tail].prev = linkedList->tail;
-
-    // linkedList->List[linkedList->head].prev = linkedList->tail;
-    // linkedList->List[linkedList->head].next = linkedList->head;
 
     // TODO: ListVerity
 
@@ -216,26 +210,6 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
     return ERR_OK;
 
 }
-
-/*
-err_t PushAfter(val, pos) {
-
-    listIndex newIndex = GetFreeCell;
-
-    listIndex oldNext = List[pos].next;
-    listIndex oldPrev = List[pos].prev;
-
-    listMember newMember = {.value = val, .prev = pos};
-
-    List[oldPrev].next = newIndex;
-
-    List[newIndex] = newMember;
-
-    ListVerify()
-
-    return ERR_OK;
-}
-*/
 
 void ListDump(FILE * stream, const listResources * linkedList) {
 
