@@ -1,6 +1,6 @@
-// TODO: Erase(pos)
 // TODO: Verify
 // TODO: Insert
+// TODO: size()
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -261,6 +261,9 @@ void ListDump(FILE * stream, const listResources * linkedList) {
         fprintf(stream, "|%11s|%13s|%10s|%11s|\n", indexStr, valueStr, prevStr, nextStr);
 
     }
+    fprintf(stream, "__________________________________________________\n");
+    fprintf(stream, ">>> CAPACITY: %zu\n", linkedList->capacity);
+    fprintf(stream, ">>> SIZE: \n"); // TODO: size()
     fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
