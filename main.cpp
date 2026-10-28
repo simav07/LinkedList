@@ -46,6 +46,8 @@ err_t PushFront(listResources * linkedList, listElem_t val);
 
 err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position);
 
+err_t Erase(listResources * linkedList, listIndex position);
+
 void ListDump(FILE * stream, const listResources * linkedList);
 /*
 
@@ -76,6 +78,9 @@ int main() {
     PushAfter(&linkedList, 67, 1);
     ListDump(stdout, &linkedList);
     PushAfter(&linkedList, 67, 1);
+    ListDump(stdout, &linkedList);
+
+    Erase(&linkedList, 4);
     ListDump(stdout, &linkedList);
 
     return 0;
@@ -187,6 +192,23 @@ err_t Erase(pos) {
     List[pos].prev = -1;
 }
 */
+
+err_t Erase(listResources * linkedList, listIndex position) {
+
+    ASSERT(linkedList);
+    if (IS_POISON(linkedList->List[position].value)) return ERR_ERASE;
+
+    linkedList->List[position].value = LIST_POISON;
+
+    linkedList->List[linkedList->List[position].prev].next = linkedList->List[position].next;
+    linkedList->List[linkedList->List[position].next].prev = linkedList->List[position].prev;
+
+    linkedList->List[position].next = -1;
+    linkedList->List[position].prev = -1;
+
+    return ERR_OK;
+
+}
 
 err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position) {
 
