@@ -214,23 +214,27 @@ void ListDump(FILE * stream, listResources * linkedList) {
     ASSERT(linkedList);
     ASSERT(stream);
 
-    fprintf(stream, "_________________________________\n");
-    fprintf(stream, "|    VALUE    | PREVIOUS | NEXT |\n");
-    fprintf(stream, "---------------------------------\n");
+    fprintf(stream, "\n           <<<<< LIST DUMP >>>>>         \n");
+    fprintf(stream, "_________________________________________\n");
+    fprintf(stream, "| INDEX |    VALUE    | PREVIOUS | NEXT |\n");
+    fprintf(stream, "-----------------------------------------\n");
     
     for (size_t i = 0; i < linkedList->capacity; i++) {
-
+        
+        char indexStr[7]  = "";
         char valueStr[13] = "";
         char prevStr [10] = "";
         char nextStr [6]  = "";
 
+        snprintf(indexStr, 7, "%zu", i);
         snprintf(valueStr, 13, LIST_ELEM_FORMAT, linkedList->List[i].value);
         snprintf(prevStr, 10, "%zd", linkedList->List[i].prev);
         snprintf(nextStr, 6, "%zd", linkedList->List[i].next);
 
-        fprintf(stream, "|%13s|%10s|%6s|\n", valueStr, prevStr, nextStr);
+        fprintf(stream, "|%7s|%13s|%10s|%6s|\n", indexStr, valueStr, prevStr, nextStr);
 
     }
+    fprintf(stream, "_________________________________________\n");
 
     fflush(stream);
 }
