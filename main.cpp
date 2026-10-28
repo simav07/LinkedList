@@ -8,10 +8,11 @@
 #include "include/debug.h"
 
 typedef double listElem_t;
-typedef size_t listIndex;
+typedef ssize_t listIndex;
 typedef int    err_t;
 
 #define IS_POISON(val) isnan(val)
+#define LIST_ELEM_FORMAT "%lg"
 
 struct listMember {
     listElem_t value;
@@ -40,7 +41,7 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
 err_t PushFront(listResources * linkedList, listElem_t val);
 
-
+void ListDump(FILE * stream, listResources * linkedList);
 /*
 err_t GetFreeCell(next);
 
@@ -64,10 +65,12 @@ int main() {
         return 1;
     }
 
-    PushFront(&linkedList, 1);
-    PushFront(&linkedList, 2);
-    PushFront(&linkedList, 3);
-    PushFront(&linkedList, 4);
+    for (int i = 100; i < 105; i++) {
+
+        PushFront(&linkedList, i);
+        ListDump(stdout, &linkedList);
+
+    }
 
     return 0;
 }
@@ -130,11 +133,6 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
     linkedList->List[newIndex] = newHead;
 
     linkedList->head = newIndex;  // <-- rewrite head index
-
-    /*
-    linkedList->List[newIndex].prev  = oldHead;   // <-- previous head index
-    linkedList->List[newIndex].next  = newIndex;  // <-- pointer on its own
-    linkedList->List[newIndex].value = 0;         // <-- head's default value */
 
     return ERR_OK;
 }
@@ -210,3 +208,29 @@ err_t PushAfter(val, pos) {
     return ERR_OK;
 }
 */
+
+void ListDump(FILE * stream, listResources * linkedList) {
+
+    ASSERT(linkedList);
+    ASSERT(stream);
+
+    fprintf(stream, "_________________________________\n");
+    fprintf(stream, "|    VALUE    | PREVIOUS | NEXT |\n");
+    fprintf(stream, "---------------------------------\n");
+    
+    for (size_t i = 0; i < linkedList->capacity; i++) {
+
+        char valueStr[13] = "";
+        char prevStr [10] = "";
+        char nextStr [6]  = "";
+
+        snprintf(valueStr, 13, LIST_ELEM_FORMAT, linkedList->List[i].value);
+        snprintf(prevStr, 10, "%zd", linkedList->List[i].prev);
+        snprintf(nextStr, 6, "%zd", linkedList->List[i].next);
+
+        fprintf(stream, "|%13s|%10s|%6s|\n", valueStr, prevStr, nextStr);
+
+    }
+
+    fflush(stream);
+}
