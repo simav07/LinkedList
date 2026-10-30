@@ -1,6 +1,5 @@
 // TODO: Verify
 // TODO: Insert
-// TODO: size()
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +25,7 @@ struct listMember {
 
 struct listResources {
     size_t capacity;
+    size_t size;
 
     listMember * List;
 
@@ -39,6 +39,7 @@ const listElem_t LIST_POISON  = NAN;
 const char FREE_FLAG = -1;    
 
 err_t ListCtor(listResources * linkedList);
+err_t ListDtor(listResources * linkedList);
 
 err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
@@ -71,17 +72,17 @@ int main() {
     for (int i = 100; i < 105; i++) {
 
         PushFront(&linkedList, i);
-        ListDump(stdout, &linkedList);
+        ListDump(stderr, &linkedList);
 
     }
 
     PushAfter(&linkedList, 69, 1);
-    ListDump(stdout, &linkedList);
+    ListDump(stderr, &linkedList);
     PushAfter(&linkedList, 67, 1);
-    ListDump(stdout, &linkedList);
+    ListDump(stderr, &linkedList);
 
     Erase(&linkedList, 4);
-    ListDump(stdout, &linkedList);
+    ListDump(stderr, &linkedList);
 
     return 0;
 }
@@ -91,6 +92,7 @@ err_t ListCtor(listResources * linkedList) {
     ASSERT(linkedList);
 
     linkedList->capacity = DEFAULT_CAPACITY;
+    linkedList->size     = 0;
 
     listMember * newList = (listMember *)calloc(linkedList->capacity, sizeof(listMember));
     if (!newList) return ERR_CALLOC;
@@ -138,6 +140,7 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
     linkedList->List[newIndex] = newHead;
 
     linkedList->head = newIndex;  // <-- rewrite head index
+    linkedList->size++;
 
     return ERR_OK;
 }
@@ -206,6 +209,8 @@ err_t Erase(listResources * linkedList, listIndex position) {
     linkedList->List[position].next = -1;
     linkedList->List[position].prev = -1;
 
+    linkedList->size--;
+
     return ERR_OK;
 
 }
@@ -228,6 +233,46 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
     linkedList->List[oldNext].prev = newIndex;
 
     linkedList->List[newIndex] = newMember;
+    linkedList->size++;
+
+    return ERR_OK;
+
+}
+
+err_t ListDtor(listResources * linkedList) {
+
+    free(linkedList->List);
+    linkedList->tail = 0;
+    linkedList->head = 0;
+    linkedList->capacity = 0;
+    linkedList->size     = 0;
+
+    return ERR_OK;
+
+}
+
+err_t ListVerity(const listResources * linkedList) {
+
+    // FIXME: more if
+
+    ASSERT(linkedList);
+
+    if (linkedList->size > linkedList->capacity) ERR_SIZE;
+
+    listIndex start = linkedList->tail;
+    listIndex end   = linkedList->head;
+    size_t maxCount = linkedList->size;
+
+    listIndex currIndex = start;
+
+    size_t count = 0;
+
+    while (linkedList->List[currIndex].next != end) {
+        if (count > maxCount) return ERR_LIST;
+
+        currIndex = linkedList->List[currIndex].next;
+        count++;
+    }
 
     return ERR_OK;
 
@@ -263,7 +308,7 @@ void ListDump(FILE * stream, const listResources * linkedList) {
     }
     fprintf(stream, "__________________________________________________\n");
     fprintf(stream, ">>> CAPACITY: %zu\n", linkedList->capacity);
-    fprintf(stream, ">>> SIZE: \n"); // TODO: size()
+    fprintf(stream, ">>> SIZE:     %zu\n", linkedList->size);
     fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
