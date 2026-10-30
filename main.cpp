@@ -1,4 +1,3 @@
-// TODO: Verify
 // TODO: Insert
 
 #include <stdio.h>
@@ -15,6 +14,12 @@ typedef int    err_t;
 
 #define IS_POISON(val) isnan(val)
 #define LIST_ELEM_FORMAT "%lg"
+
+#ifdef VERIFY
+#define LIST_VERIFY(linkedList, stream) CheckListErrors(linkedList, stream, __func__, __LINE__)
+#else
+#define LIST_VERIFY(linkedList, stream) (void)0;
+#endif
 
 struct listMember {
     listElem_t value;
@@ -49,7 +54,17 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
 
 err_t Erase(listResources * linkedList, listIndex position);
 
+err_t CheckListErrors(  const listResources * linkedList,
+                        FILE * stream,
+                        const char * funcname,
+                        const int line);
+    
 void ListDump(FILE * stream, const listResources * linkedList);
+
+err_t ListVerity(const listResources * linkedList);
+
+const char * GetErrorDescription(err_t errorCode);
+
 /*
 
 err_t Erase(pos);
@@ -83,6 +98,10 @@ int main() {
 
     Erase(&linkedList, 4);
     ListDump(stderr, &linkedList);
+
+    // linkedList.size = 100;
+
+    LIST_VERIFY(&linkedList, stderr);
 
     return 0;
 }
@@ -183,17 +202,6 @@ err_t PushBack(val) {
     return ERR_OK;
 
 }
-
-err_t Erase(pos) {
-
-    List[pos].value = poison;
-
-    List[List[pos].prev].next = List[pos].next;
-    List[List[pos].next].prev = List[pos].prev;
-
-    List[pos].next = -1;
-    List[pos].prev = -1;
-}
 */
 
 err_t Erase(listResources * linkedList, listIndex position) {
@@ -251,13 +259,36 @@ err_t ListDtor(listResources * linkedList) {
 
 }
 
+err_t CheckListErrors(  const listResources * linkedList,
+                        FILE * stream,
+                        const char * funcname,
+                        const int line) {
+
+    ASSERT(linkedList);
+    ASSERT(stream);
+    ASSERT(funcname);
+    ASSERT(line);
+
+    err_t listStatus = ListVerity(linkedList);
+
+    if (listStatus == ERR_OK) return ERR_OK;
+
+    fprintf(stream, "  <<<<< LIST VERIFY >>>>>   \n");
+    fprintf(stream, "     ! ERROR DETECTED !     \n");
+    fprintf(stream, "Function: %s:%d\n", funcname, line);
+    fprintf(stream, "Description: %s\n", GetErrorDescription(listStatus));
+
+    fflush(stream);
+    return listStatus;
+}
+
 err_t ListVerity(const listResources * linkedList) {
 
-    // FIXME: more if
+    // TODO: more if
 
     ASSERT(linkedList);
 
-    if (linkedList->size > linkedList->capacity) ERR_SIZE;
+    if (linkedList->size > linkedList->capacity) return ERR_SIZE;
 
     listIndex start = linkedList->tail;
     listIndex end   = linkedList->head;
@@ -268,13 +299,30 @@ err_t ListVerity(const listResources * linkedList) {
     size_t count = 0;
 
     while (linkedList->List[currIndex].next != end) {
-        if (count > maxCount) return ERR_LIST;
+        if (count > maxCount) return ERR_DISRUPT;
 
         currIndex = linkedList->List[currIndex].next;
         count++;
     }
 
     return ERR_OK;
+
+}
+
+const char * GetErrorDescription(err_t errorCode) {
+
+    switch(errorCode) {
+
+        case (ERR_OK):      return "All good";
+        case (ERR_SIZE):    return "Incorrect size"; // FIXME: write good description
+        case (ERR_DISRUPT): return "Disruption of indexes in the list";
+
+        // TODO: description
+        default: break;
+
+    }
+
+    return "There is no description of this error";
 
 }
 
