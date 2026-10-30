@@ -103,9 +103,12 @@ int main() {
     PushBefore(&linkedList, 666, 5);
     ListDump(stderr, &linkedList);
 
-    // linkedList.size = 100;
+    // There is an error of connect between list members
+    linkedList.List[5].next = 9;
 
-    LIST_VERIFY(&linkedList, stderr);
+    ListDump(stderr, &linkedList);
+
+    LIST_VERIFY(&linkedList, stderr); // <-- Verification successfully detected it!
 
     return 0;
 }
