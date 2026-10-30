@@ -18,7 +18,7 @@ typedef int    err_t;
 #ifdef VERIFY
 #define LIST_VERIFY(linkedList, stream) CheckListErrors(linkedList, stream, __func__, __LINE__)
 #else
-#define LIST_VERIFY(linkedList, stream) (void)0;
+#define LIST_VERIFY(linkedList, stream) (void)0
 #endif
 
 struct listMember {
@@ -50,7 +50,8 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
 err_t PushFront(listResources * linkedList, listElem_t val);
 
-err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position);
+err_t PushAfter (listResources * linkedList, listElem_t value, listIndex position);
+err_t PushBefore(listResources * linkedList, listElem_t value, listIndex position);
 
 err_t Erase(listResources * linkedList, listIndex position);
 
@@ -97,6 +98,9 @@ int main() {
     ListDump(stderr, &linkedList);
 
     Erase(&linkedList, 4);
+    ListDump(stderr, &linkedList);
+
+    PushBefore(&linkedList, 666, 5);
     ListDump(stderr, &linkedList);
 
     // linkedList.size = 100;
@@ -246,6 +250,32 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
     return ERR_OK;
 
 }
+
+err_t PushBefore(listResources * linkedList, listElem_t value, listIndex position) {
+
+    ASSERT(linkedList);
+
+    listIndex newIndex = -1;
+    if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
+        printf("Error of searching a free cell\n");
+        return ERR_PUSHBEFORE;
+    }
+
+    listIndex oldPrev = linkedList->List[position].prev;
+
+    listMember newMember = {.value = value, .next = position, .prev = oldPrev};
+
+    linkedList->List[position].prev = newIndex;
+    linkedList->List[oldPrev].next  = newIndex;
+
+    linkedList->List[newIndex] = newMember;
+    linkedList->size++;
+
+    // TODO: ListVerify
+
+    return ERR_OK;
+}
+
 
 err_t ListDtor(listResources * linkedList) {
 
