@@ -1,4 +1,4 @@
-// TODO: Insert
+// TODO: resize(up/down, List)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +12,6 @@ typedef double listElem_t;
 typedef ssize_t listIndex;
 typedef int    err_t;
 
-#define IS_POISON(val) isnan(val)
 #define LIST_ELEM_FORMAT "%lg"
 
 #ifdef VERIFY
@@ -36,12 +35,13 @@ struct listResources {
 
     listIndex head;
     listIndex tail;
-
 };
 
 const size_t DEFAULT_CAPACITY = 10;
 const listElem_t LIST_POISON  = NAN;
-const char FREE_FLAG = -1;    
+const ssize_t FREE_FLAG = -1;
+
+bool IsPoison(double number);
 
 err_t ListCtor(listResources * linkedList);
 err_t ListDtor(listResources * linkedList);
@@ -52,13 +52,14 @@ err_t PushFront(listResources * linkedList, listElem_t val);
 
 err_t PushAfter (listResources * linkedList, listElem_t value, listIndex position);
 err_t PushBefore(listResources * linkedList, listElem_t value, listIndex position);
+err_t Insert    (listResources * linkedList, listElem_t value, listIndex position);
 
 err_t Erase(listResources * linkedList, listIndex position);
 
-err_t CheckListErrors(  const listResources * linkedList,
-                        FILE * stream,
-                        const char * funcname,
-                        const int line);
+err_t CheckListErrors(const listResources * linkedList,
+                      FILE * stream,
+                      const char * funcname,
+                      const int line);
     
 void ListDump(FILE * stream, const listResources * linkedList);
 
@@ -67,8 +68,6 @@ err_t ListVerity(const listResources * linkedList);
 const char * GetErrorDescription(err_t errorCode);
 
 /*
-
-err_t Erase(pos);
 
 err_t Insert(pos, val);
 
@@ -103,6 +102,9 @@ int main() {
     PushBefore(&linkedList, 666, 5);
     ListDump(stderr, &linkedList);
 
+    Insert(&linkedList, 999, 7);
+    ListDump(stderr, &linkedList);
+
     LIST_VERIFY(&linkedList, stderr);
 
     return 0;
@@ -122,19 +124,17 @@ err_t ListCtor(listResources * linkedList) {
     for (size_t i = 0; i < linkedList->capacity; i++) {
 
         linkedList->List[i].value = LIST_POISON;
-        linkedList->List[i].next  = -1;
-        linkedList->List[i].prev  = -1;
+        linkedList->List[i].next  = FREE_FLAG;
+        linkedList->List[i].prev  = FREE_FLAG;
 
     }
 
     linkedList->tail = 0;
-    linkedList->head = 1;
+    linkedList->head = 0;
 
     listMember initTail = {.value = 0, .next = linkedList->head, .prev = linkedList->tail};
-    listMember initHead = {.value = 0, .next = linkedList->head, .prev = linkedList->tail};
 
     linkedList->List[linkedList->tail] = initTail;
-    linkedList->List[linkedList->head] = initHead;
 
     // TODO: ListVerity
 
@@ -176,7 +176,7 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 
         if (linkedList->List[i].next == FREE_FLAG &&
             linkedList->List[i].prev == FREE_FLAG)  {
-            if (!IS_POISON(linkedList->List[i].value)) return ERR_GET_CELL;
+            if (!IsPoison(linkedList->List[i].value)) return ERR_GET_CELL;
 
             *newIndex = i;
 
@@ -188,7 +188,7 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 }
 
 /*
-
+TODO:
 err_t PushBack(val) {
 
     listIndex newIndex = GetFreeCell(next);
@@ -209,15 +209,15 @@ err_t PushBack(val) {
 err_t Erase(listResources * linkedList, listIndex position) {
 
     ASSERT(linkedList);
-    if (IS_POISON(linkedList->List[position].value)) return ERR_ERASE;
+    if (IsPoison(linkedList->List[position].value)) return ERR_ERASE;
 
     linkedList->List[position].value = LIST_POISON;
 
     linkedList->List[linkedList->List[position].prev].next = linkedList->List[position].next;
     linkedList->List[linkedList->List[position].next].prev = linkedList->List[position].prev;
 
-    linkedList->List[position].next = -1;
-    linkedList->List[position].prev = -1;
+    linkedList->List[position].next = FREE_FLAG;
+    linkedList->List[position].prev = FREE_FLAG;
 
     linkedList->size--;
 
@@ -240,7 +240,7 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
     listMember newMember = {.value = value, .next = oldNext, .prev = position};
 
     linkedList->List[position].next = newIndex;
-    linkedList->List[oldNext].prev = newIndex;
+    linkedList->List[oldNext].prev  = newIndex;
 
     linkedList->List[newIndex] = newMember;
     linkedList->size++;
@@ -274,12 +274,21 @@ err_t PushBefore(listResources * linkedList, listElem_t value, listIndex positio
     return ERR_OK;
 }
 
+err_t Insert(listResources * linkedList, listElem_t value, listIndex position) {
+
+    ASSERT(linkedList);
+
+    return PushBefore(linkedList, value, linkedList->List[position].next);
+}
+
+// TODO: GetBegin
+// TODO: GetBack
 
 err_t ListDtor(listResources * linkedList) {
 
     free(linkedList->List);
-    linkedList->tail = 0;
-    linkedList->head = 0;
+    linkedList->tail     = 0;
+    linkedList->head     = 0;
     linkedList->capacity = 0;
     linkedList->size     = 0;
 
@@ -388,4 +397,11 @@ void ListDump(FILE * stream, const listResources * linkedList) {
     fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
+}
+
+bool IsPoison(double number) {
+
+    if (isnan(number)) return true;
+
+    return false;
 }
