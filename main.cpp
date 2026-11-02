@@ -3,7 +3,7 @@
     TODO: ListDump
           1) err_t GetObjectGraph(linkedList, stream)
           2) SetObjectGraph
-          3) GetTextDump
+          3) WriteTextDump
           4) WriteHtml
     
     TODO: GetFront()
@@ -14,7 +14,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include "include/colors.h"
 #include "include/errors.h"
@@ -23,6 +25,13 @@
 typedef double listElem_t;
 typedef ssize_t listIndex;
 typedef int    err_t;
+
+#define IS_STAT_OK(status)  do {                                        \
+                                if (status != ERR_OK) {                 \
+                                    PRINT_DEBUG("ERROR: %d\n", status); \
+                                    return status;                      \
+                                }                                       \
+                            } while (0)
 
 #define LIST_ELEM_FORMAT "%lg"
 
@@ -54,6 +63,9 @@ const listElem_t LIST_POISON      = NAN;
 const ssize_t    FREE_FLAG        = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
 
+const char FOLDER_WITH_PICTURES[]      = "graphs";
+const char FILE_SCRIPT_FOR_GRAPHVIZ[]  = "graph.dot";
+
 bool IsPoison(double number);
 
 err_t ListCtor(listResources * linkedList);
@@ -74,7 +86,15 @@ err_t CheckListErrors(const listResources * linkedList,
                       const char * funcname,
                       const int line);
     
-void GetTextDump(FILE * stream, const listResources * linkedList);
+err_t ListDump(const listResources * linkedList, size_t count, FILE * stream);
+
+err_t GeneratePictureName(char ** pictureName, size_t count);
+err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
+err_t GetObjectGraph(const listResources * linkedList, char * pictureName);
+void MakeGraphvizScript(FILE * stream, const listResources * linkedList);
+void InsertObjectGraph(FILE * stream, const char * picturePath);
+
+void WriteTextDump(FILE * stream, const listResources * linkedList);
 
 err_t ListVerity(const listResources * linkedList);
 
@@ -90,26 +110,38 @@ int main() {
         return 1;
     }
 
+    FILE * htmlStream = fopen("dump.html", "w");
+    if (htmlStream == NULL) {
+        PRINT_DEBUG("html error\n");
+        return 1;
+    }
+    fprintf(htmlStream, "<pre>\n");
+
     for (int i = 100; i < 105; i++) {
 
         PushFront(&linkedList, i);
-        GetTextDump(stderr, &linkedList);
+
+        ListDump(&linkedList, i, htmlStream);
+
+        //WriteTextDump(stderr, &linkedList);
 
     }
 
+    fclose(htmlStream);
+
     PushAfter(&linkedList, 69, 1);
-    GetTextDump(stderr, &linkedList);
+    WriteTextDump(stderr, &linkedList);
     PushAfter(&linkedList, 67, 1);
-    GetTextDump(stderr, &linkedList);
+    WriteTextDump(stderr, &linkedList);
 
     Erase(&linkedList, 4);
-    GetTextDump(stderr, &linkedList);
+    WriteTextDump(stderr, &linkedList);
 
     PushBefore(&linkedList, 666, 5);
-    GetTextDump(stderr, &linkedList);
+    WriteTextDump(stderr, &linkedList);
 
     Insert(&linkedList, 999, 7);
-    GetTextDump(stderr, &linkedList);
+    WriteTextDump(stderr, &linkedList);
 
     LIST_VERIFY(&linkedList, stderr);
 
@@ -379,19 +411,158 @@ const char * GetErrorDescription(err_t errorCode) {
 
 }
 
+err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
+
+    ASSERT(linkedList);
+    ASSERT(stream);
+
+    fprintf(stream, "<<<<<<<<<<<<<<<<<<< LIST DUMP ¹%zu >>>>>>>>>>>>>>>>>>>>>\n", count);
+
+    char * pictureName = NULL;
+    char * picturePath = NULL;
+
+    err_t nameStat = GeneratePictureName(&pictureName, count);
+    IS_STAT_OK(nameStat);
+
+    err_t pathStat = GetPicturePath(FOLDER_WITH_PICTURES, pictureName, &picturePath);
+    IS_STAT_OK(pathStat);
+
+    err_t getGraphStat = GetObjectGraph(linkedList, pictureName);
+    IS_STAT_OK(getGraphStat);
+
+    InsertObjectGraph(stream, picturePath);
+
+    fprintf(stream, "<p>");
+    WriteTextDump(stream, linkedList);
+    LIST_VERIFY(linkedList, stream);
+    fprintf(stream, "<\p>\n");
+
+    return ERR_OK;
+}
+
+err_t GeneratePictureName(char ** pictureName, size_t count) {
+
+    ASSERT(pictureName);
+
+    //! example of picture's name: 20261102_2020-1 - the 2nd of November, 20:20, 1st picture
+    size_t nameLength = 20 + (int)(count / 10) + 1;
+    char newName[nameLength] = "";
+
+    time_t mytime = time(NULL);
+    struct tm * now = localtime(&mytime);
+
+    int printStat = snprintf(newName, nameLength, "%d%d%d_%d%d-%zd.png",
+                             now->tm_year, now->tm_mon, now->tm_mday,
+                             now->tm_hour, now->tm_min, count);
+    
+    if (printStat > nameLength || printStat <= 0){
+        PRINT_DEBUG("ERROR: %d", printStat);
+        return ERR_SNPRINTF;
+    }
+    *pictureName = strdup(newName);
+    if (*pictureName == NULL) return ERR_MEMORY;
+
+    return ERR_OK;
+}
+
+err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath) {
+
+    ASSERT(pictureName);
+    ASSERT(picturePath);
+    ASSERT(sourceFolder);
+
+    const size_t pathLength = strlen(sourceFolder) + strlen(pictureName) + 2;
+    char bufferPath[pathLength] = "";
+
+    err_t printVal = snprintf(bufferPath, pathLength, "%s/%s", sourceFolder, pictureName);
+    if (printVal <= 0 || printVal > pathLength) return ERR_SNPRINTF;
+
+    *picturePath = strdup(bufferPath);
+    if (*picturePath == NULL) return ERR_MEMORY;
+
+    return ERR_OK;
+}
+
+err_t GetObjectGraph(const listResources * linkedList, char * pictureName) {
+
+    ASSERT(linkedList);
+    ASSERT(pictureName);
+
+    FILE * stream = fopen(FILE_SCRIPT_FOR_GRAPHVIZ, "w");
+    if (stream == NULL) return ERR_FILEOPEN;
+
+    MakeGraphvizScript(stream, linkedList);
+    fclose(stream);
+
+    size_t commandLen = 20 + strlen(FILE_SCRIPT_FOR_GRAPHVIZ) + strlen(pictureName);
+    char command[commandLen] = "";
+    int printStat = snprintf(command, commandLen, "dot %s -Tpng -o %s", FILE_SCRIPT_FOR_GRAPHVIZ, pictureName);
+    if (printStat > commandLen || printStat <= 0) return ERR_SNPRINTF;
+
+    system("cd graphs");
+    int sysStat = system(command);
+    if (sysStat == -1) return ERR_SYSTEM;
+
+    return ERR_OK;      
+}
+
+void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
+
+    ASSERT(stream);
+    ASSERT(linkedList);
+
+    fprintf(stream, "digraph {\n"
+                              "rankdir=LR;\n"
+                              "ranksep=0.8;\n");
+    fprintf(stream, "node [shape=record, fontname = \"Arial\", style=filled, fillcolor=\"#EEF4FF\"];\n"
+                    "edge [fontname = \"Arial\", arrowsize=0.8;];\n\n");
+    
+    for (size_t i = 0; i < linkedList->capacity; i++) {
+
+        fprintf(stream, "n%zu [label=\"{<i> index = %zu} | {<prev> prev = %zd | <data> %lg | <next> next = %zd}\"];\n",
+                            i, i, linkedList->List[i].prev, linkedList->List[i].value, linkedList->List[i].next);
+
+    }
+
+    for (size_t i = 0; i < linkedList->capacity; i++) {
+        listIndex next = linkedList->List[i].next;
+        listIndex prev = linkedList->List[i].prev;
+
+        if (next != -1) fprintf(stream, "n%zu:next:e -> n%zu:prev:w [color=\"#2563EB\"];\n", i, next);
+        if (prev != -1) fprintf(stream, "n%zu:prev:s -> n%zu:data:s [color=\"#DC2626\"];\n", i, prev);
+    }
+
+    fprintf(stream, "}\n");
+
+}
+
+void InsertObjectGraph(FILE * stream, const char * picturePath) {
+
+    ASSERT(stream);
+    ASSERT(picturePath);
+
+    fprintf(stream, "<img src=\"%s\">\n", picturePath);
+
+}
+
 /*
-void ListDump(const listResources * linkedList, FILE * stream) {
+void ListDump(const listResources * linkedList, size_t count, FILE * stream) {
 
-    GetObjectGraph(linkedList, &picturePath) != ERR_OK)
-    InsertObjectGraph(picturePath, stream);
+    char ** pictureName = NULL;
+    char ** picturePath = NULL;
 
-    GetTextDump(stream, linkedList)
+    GeneratePictureName(pictureName, count) + GetPicturePath(picturePath)
+
+    GetObjectGraph(linkedList, *pictureName) != ERR_OK);
+    InsertObjectGraph(*picturePath, stream);
+
+    WriteTextDump(stream, linkedList);
 
     LIST_VERIFY(linkedList, stream);
 }
 */
 
-void GetTextDump(FILE * stream, const listResources * linkedList) {
+void WriteTextDump(FILE * stream, const listResources * linkedList) {
 
     ASSERT(linkedList);
     ASSERT(stream);
