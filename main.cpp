@@ -416,7 +416,7 @@ err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
     ASSERT(linkedList);
     ASSERT(stream);
 
-    fprintf(stream, "<<<<<<<<<<<<<<<<<<< LIST DUMP ¹%zu >>>>>>>>>>>>>>>>>>>>>\n", count);
+    fprintf(stream, "<h2><<<<<<<<<<<<< LIST DUMP %zu >>>>>>>>>>>>>>>></h2>\n", count);
 
     char * pictureName = NULL;
     char * picturePath = NULL;
@@ -427,7 +427,7 @@ err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
     err_t pathStat = GetPicturePath(FOLDER_WITH_PICTURES, pictureName, &picturePath);
     IS_STAT_OK(pathStat);
 
-    err_t getGraphStat = GetObjectGraph(linkedList, pictureName);
+    err_t getGraphStat = GetObjectGraph(linkedList, picturePath); // pictureName
     IS_STAT_OK(getGraphStat);
 
     InsertObjectGraph(stream, picturePath);
@@ -541,7 +541,7 @@ void InsertObjectGraph(FILE * stream, const char * picturePath) {
     ASSERT(stream);
     ASSERT(picturePath);
 
-    fprintf(stream, "<img src=\"%s\">\n", picturePath);
+    fprintf(stream, "<img src=\"%s\" style=\"width: 60%;\">\n", picturePath);
 
 }
 
