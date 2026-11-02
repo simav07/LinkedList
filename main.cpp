@@ -59,6 +59,7 @@ const listElem_t LIST_POISON      = NAN;
 const ssize_t    FREE_FLAG        = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
 
+// TODO: get if from console
 const char FOLDER_WITH_PICTURES[]      = "graphs";
 const char FILE_SCRIPT_FOR_GRAPHVIZ[]  = "graph.dot";
 
@@ -87,8 +88,8 @@ err_t ListDump(const listResources * linkedList, size_t count, FILE * stream);
 err_t GeneratePictureName(char ** pictureName, size_t count);
 err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
 err_t GetObjectGraph(const listResources * linkedList, char * pictureName);
-void MakeGraphvizScript(FILE * stream, const listResources * linkedList);
-void InsertObjectGraph(FILE * stream, const char * picturePath);
+void  MakeGraphvizScript(FILE * stream, const listResources * linkedList);
+void  InsertObjectGraph(FILE * stream, const char * picturePath);
 
 void WriteTextDump(FILE * stream, const listResources * linkedList);
 
@@ -449,9 +450,9 @@ err_t GeneratePictureName(char ** pictureName, size_t count) {
     time_t mytime = time(NULL);
     struct tm * now = localtime(&mytime);
 
-    int printStat = snprintf(newName, nameLength, "%d%d%d_%d%d-%zd.png",
-                             now->tm_year, now->tm_mon, now->tm_mday,
-                             now->tm_hour, now->tm_min, count);
+    int printStat = snprintf(newName, nameLength, "%d_%dh%dm-%zu.png",
+                             now->tm_yday, now->tm_hour,
+                             now->tm_min, count);
     
     if (printStat > nameLength || printStat <= 0){
         PRINT_DEBUG("ERROR: %d", printStat);

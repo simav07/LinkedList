@@ -13,6 +13,10 @@ enum ERRORS {
     ERR_SIZE,
     ERR_DISRUPT,
     ERR_SYS_CELL,
+    ERR_SNPRINTF,
+    ERR_MEMORY,
+    ERR_FILEOPEN,
+    ERR_SYSTEM,
 };
 
 #endif
