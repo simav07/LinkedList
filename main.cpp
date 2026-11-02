@@ -1,10 +1,6 @@
 /*  TODO: err_t resize(up/down, List)
 
-    TODO: ListDump
-          1) err_t GetObjectGraph(linkedList, stream)
-          2) SetObjectGraph
-          3) WriteTextDump
-          4) WriteHtml
+    TODO: arv flags for list dump
     
     TODO: GetFront()
     TODO: GetBack()
@@ -109,6 +105,8 @@ int main() {
         printf("Error of constructor. Error code: %d\n", prepareStat);
         return 1;
     }
+
+    system("del /f /q \"graphs\\*.*\"");
 
     FILE * htmlStream = fopen("dump.html", "w");
     if (htmlStream == NULL) {
@@ -544,23 +542,6 @@ void InsertObjectGraph(FILE * stream, const char * picturePath) {
     fprintf(stream, "<img src=\"%s\" style=\"width: 60%;\">\n", picturePath);
 
 }
-
-/*
-void ListDump(const listResources * linkedList, size_t count, FILE * stream) {
-
-    char ** pictureName = NULL;
-    char ** picturePath = NULL;
-
-    GeneratePictureName(pictureName, count) + GetPicturePath(picturePath)
-
-    GetObjectGraph(linkedList, *pictureName) != ERR_OK);
-    InsertObjectGraph(*picturePath, stream);
-
-    WriteTextDump(stream, linkedList);
-
-    LIST_VERIFY(linkedList, stream);
-}
-*/
 
 void WriteTextDump(FILE * stream, const listResources * linkedList) {
 
