@@ -1,5 +1,16 @@
-// TODO: resize(up/down, List)
-// TODO: bit code for the list verify
+/*  TODO: err_t resize(up/down, List)
+
+    TODO: ListDump
+          1) err_t GetObjectGraph(linkedList, stream)
+          2) SetObjectGraph
+          3) GetTextDump
+          4) WriteHtml
+    
+    TODO: GetFront()
+    TODO: GetBack()
+    TODO: bit code for the list verify
+
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,7 +74,7 @@ err_t CheckListErrors(const listResources * linkedList,
                       const char * funcname,
                       const int line);
     
-void ListDump(FILE * stream, const listResources * linkedList);
+void GetTextDump(FILE * stream, const listResources * linkedList);
 
 err_t ListVerity(const listResources * linkedList);
 
@@ -82,23 +93,23 @@ int main() {
     for (int i = 100; i < 105; i++) {
 
         PushFront(&linkedList, i);
-        ListDump(stderr, &linkedList);
+        GetTextDump(stderr, &linkedList);
 
     }
 
     PushAfter(&linkedList, 69, 1);
-    ListDump(stderr, &linkedList);
+    GetTextDump(stderr, &linkedList);
     PushAfter(&linkedList, 67, 1);
-    ListDump(stderr, &linkedList);
+    GetTextDump(stderr, &linkedList);
 
     Erase(&linkedList, 4);
-    ListDump(stderr, &linkedList);
+    GetTextDump(stderr, &linkedList);
 
     PushBefore(&linkedList, 666, 5);
-    ListDump(stderr, &linkedList);
+    GetTextDump(stderr, &linkedList);
 
     Insert(&linkedList, 999, 7);
-    ListDump(stderr, &linkedList);
+    GetTextDump(stderr, &linkedList);
 
     LIST_VERIFY(&linkedList, stderr);
 
@@ -126,10 +137,6 @@ err_t ListCtor(listResources * linkedList) {
 
     linkedList->tail = 0;
     linkedList->head = 0;
-
-    // linkedList->tail = poison; poison = -67;
-    // linkedList->head = poison;
-
 
     listMember initSysCell = {.value = LIST_POISON, .next = SYS_CELL_INDEX, .prev = SYS_CELL_INDEX};
 
@@ -171,6 +178,8 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 
     ASSERT(linkedList);
     ASSERT(newIndex);
+
+    LIST_VERIFY(linkedList, stderr);
 
     // FIXME: make more effective algorithm
     for (size_t i = 0; i < linkedList->capacity; i++) {
@@ -222,6 +231,8 @@ err_t Erase(listResources * linkedList, listIndex position) {
 
     linkedList->size--;
 
+    LIST_VERIFY(linkedList, stderr);
+
     return ERR_OK;
 
 }
@@ -245,6 +256,8 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
 
     linkedList->List[newIndex] = newMember;
     linkedList->size++;
+
+    LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
 
@@ -271,6 +284,7 @@ err_t PushBefore(listResources * linkedList, listElem_t value, listIndex positio
     linkedList->size++;
 
     // TODO: ListVerify
+    LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
 }
@@ -281,9 +295,6 @@ err_t Insert(listResources * linkedList, listElem_t value, listIndex position) {
 
     return PushBefore(linkedList, value, linkedList->List[position].next);
 }
-
-// TODO: GetBegin
-// TODO: GetBack
 
 err_t ListDtor(listResources * linkedList) {
 
@@ -326,7 +337,8 @@ err_t ListVerity(const listResources * linkedList) {
 
     ASSERT(linkedList);
 
-    if (linkedList->size > linkedList->capacity) return ERR_SIZE;
+    if (linkedList->size > linkedList->capacity)           return ERR_SIZE;
+    if (!IsPoison(linkedList->List[SYS_CELL_INDEX].value)) return ERR_SYS_CELL;
 
     listIndex start = linkedList->tail;
     listIndex end   = linkedList->head;
@@ -338,6 +350,9 @@ err_t ListVerity(const listResources * linkedList) {
 
     while (linkedList->List[currIndex].next != end) {
         if (count > maxCount) return ERR_DISRUPT;
+
+        listIndex newNext = linkedList->List[currIndex].next;
+        if (newNext != -1 && newNext < 0) return ERR_DISRUPT;
 
         currIndex = linkedList->List[currIndex].next;
         count++;
@@ -364,7 +379,19 @@ const char * GetErrorDescription(err_t errorCode) {
 
 }
 
-void ListDump(FILE * stream, const listResources * linkedList) {
+/*
+void ListDump(const listResources * linkedList, FILE * stream) {
+
+    GetObjectGraph(linkedList, &picturePath) != ERR_OK)
+    InsertObjectGraph(picturePath, stream);
+
+    GetTextDump(stream, linkedList)
+
+    LIST_VERIFY(linkedList, stream);
+}
+*/
+
+void GetTextDump(FILE * stream, const listResources * linkedList) {
 
     ASSERT(linkedList);
     ASSERT(stream);
@@ -396,7 +423,7 @@ void ListDump(FILE * stream, const listResources * linkedList) {
     fprintf(stream, "__________________________________________________\n");
     fprintf(stream, ">>> CAPACITY:   %zd\n", linkedList->capacity);
     fprintf(stream, ">>> SIZE:       %zd\n", linkedList->size);
-    fprintf(stream, ">>> FREE CELLS: %zd\n",   linkedList->capacity - linkedList->size - 1);
+    fprintf(stream, ">>> FREE CELLS: %zd\n", linkedList->capacity - linkedList->size - 1);
     fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
