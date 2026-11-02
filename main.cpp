@@ -1,4 +1,6 @@
 /*  TODO: err_t resize(up/down, List)
+    TODO: system cell - another color
+    TODO: head, tail, free elem in object graph
 
     TODO: arv flags for list dump
     
@@ -116,6 +118,8 @@ int main() {
     }
     fprintf(htmlStream, "<pre>\n");
 
+    ListDump(&linkedList, 0, htmlStream);
+
     for (int i = 100; i < 105; i++) {
 
         PushFront(&linkedList, i);
@@ -126,24 +130,25 @@ int main() {
 
     }
 
-    fclose(htmlStream);
-
+    
     PushAfter(&linkedList, 69, 1);
-    WriteTextDump(stderr, &linkedList);
+    ListDump(&linkedList, 1, htmlStream);
     PushAfter(&linkedList, 67, 1);
-    WriteTextDump(stderr, &linkedList);
-
+    ListDump(&linkedList, 2, htmlStream);
+    
     Erase(&linkedList, 4);
-    WriteTextDump(stderr, &linkedList);
-
+    ListDump(&linkedList, 3, htmlStream);
+    
     PushBefore(&linkedList, 666, 5);
-    WriteTextDump(stderr, &linkedList);
-
+    ListDump(&linkedList, 4, htmlStream);
+    
     Insert(&linkedList, 999, 7);
-    WriteTextDump(stderr, &linkedList);
-
-    LIST_VERIFY(&linkedList, stderr);
-
+    ListDump(&linkedList, 5, htmlStream);
+    
+    LIST_VERIFY(&linkedList, htmlStream);
+    
+    fclose(htmlStream);
+    ListDtor(&linkedList);
     return 0;
 }
 
@@ -183,14 +188,23 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
 
     ASSERT(linkedList);
 
+    /*
     listIndex newIndex = -1;
     if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
         printf("Error of searching a free cell\n");
         return ERR_PUSHFRONT;
-    }
-
+    } */
+    
     listIndex oldHead = linkedList->head;
 
+    PushAfter(linkedList, val, oldHead);
+
+    linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
+    
+    // linkedList->List[linkedList->head].next = -1;
+    // linkedList->List[0].prev = 0;
+    
+    /*
     // linkedList->List[oldHead].value = val;
     linkedList->List[oldHead].next  = newIndex;
     // linkedList->List[newIndex].value = val;
@@ -201,6 +215,7 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
 
     linkedList->head = newIndex;  // <-- rewrite head index
     linkedList->size++;
+    */
 
     return ERR_OK;
 }
@@ -434,7 +449,6 @@ err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
     fprintf(stream, "<p>");
     WriteTextDump(stream, linkedList);
     LIST_VERIFY(linkedList, stream);
-    fprintf(stream, "<\p>\n");
 
     return ERR_OK;
 }
