@@ -1,4 +1,5 @@
 // TODO: resize(up/down, List)
+// TODO: bit code for the list verify
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,9 +38,10 @@ struct listResources {
     listIndex tail;
 };
 
-const size_t DEFAULT_CAPACITY = 10;
-const listElem_t LIST_POISON  = NAN;
-const ssize_t FREE_FLAG = -1;
+const size_t     DEFAULT_CAPACITY = 10;
+const listElem_t LIST_POISON      = NAN;
+const ssize_t    FREE_FLAG        = -1;
+const ssize_t    SYS_CELL_INDEX   = 0;
 
 bool IsPoison(double number);
 
@@ -66,13 +68,6 @@ void ListDump(FILE * stream, const listResources * linkedList);
 err_t ListVerity(const listResources * linkedList);
 
 const char * GetErrorDescription(err_t errorCode);
-
-/*
-
-err_t Insert(pos, val);
-
-*/
-
 
 int main() {
 
@@ -132,11 +127,16 @@ err_t ListCtor(listResources * linkedList) {
     linkedList->tail = 0;
     linkedList->head = 0;
 
-    listMember initTail = {.value = 0, .next = linkedList->head, .prev = linkedList->tail};
+    // linkedList->tail = poison; poison = -67;
+    // linkedList->head = poison;
 
-    linkedList->List[linkedList->tail] = initTail;
+
+    listMember initSysCell = {.value = LIST_POISON, .next = SYS_CELL_INDEX, .prev = SYS_CELL_INDEX};
+
+    linkedList->List[linkedList->tail] = initSysCell;
 
     // TODO: ListVerity
+    LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
 }
@@ -153,10 +153,11 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
 
     listIndex oldHead = linkedList->head;
 
-    linkedList->List[oldHead].value = val;
+    // linkedList->List[oldHead].value = val;
     linkedList->List[oldHead].next  = newIndex;
+    // linkedList->List[newIndex].value = val;
 
-    listMember newHead = {.value = 0, .next = newIndex, .prev = oldHead};
+    listMember newHead = {.value = val, .next = -1, .prev = oldHead};// FIXME: val = poison (default)
 
     linkedList->List[newIndex] = newHead;
 
@@ -380,7 +381,8 @@ void ListDump(FILE * stream, const listResources * linkedList) {
         char prevStr [10] = "";
         char nextStr [11]  = "";
 
-        if (i == linkedList->head)      snprintf(indexStr, 11, "[H] %zu", i);
+        if (i == SYS_CELL_INDEX)        snprintf(indexStr, 11, "[SYS] %zu", i);
+        else if (i == linkedList->head) snprintf(indexStr, 11, "[H] %zu", i);
         else if (i == linkedList->tail) snprintf(indexStr, 11, "[T] %zu", i);
         else                            snprintf(indexStr, 11, "%zu", i);
 
@@ -392,8 +394,9 @@ void ListDump(FILE * stream, const listResources * linkedList) {
 
     }
     fprintf(stream, "__________________________________________________\n");
-    fprintf(stream, ">>> CAPACITY: %zu\n", linkedList->capacity);
-    fprintf(stream, ">>> SIZE:     %zu\n", linkedList->size);
+    fprintf(stream, ">>> CAPACITY:   %zd\n", linkedList->capacity);
+    fprintf(stream, ">>> SIZE:       %zd\n", linkedList->size);
+    fprintf(stream, ">>> FREE CELLS: %zd\n",   linkedList->capacity - linkedList->size - 1);
     fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
