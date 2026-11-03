@@ -1,7 +1,5 @@
 /*  TODO: err_t resize(up/down, List)
-    TODO: GetSize
     TODO: use getFront getBack everywhere
-    TODO: head, tail, free elem in object graph
 
     TODO: arv flags for list dump
 
@@ -63,7 +61,6 @@ const listElem_t LIST_POISON      = NAN;
 const ssize_t    FREE_FLAG        = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
 
-// TODO: get if from console
 const char FOLDER_WITH_PICTURES[]      = "graphs";
 const char FILE_SCRIPT_FOR_GRAPHVIZ[]  = "graph.dot";
 const char DUMP_FILENAME[]             = "dump.html";
@@ -77,6 +74,7 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
 err_t GetFront(const listResources * linkedList, listIndex * head);
 err_t GetBack (const listResources * linkedList, listIndex * tail);
+err_t GetSize (const listResources * linkedList, size_t * size);
 
 err_t PushFront(listResources * linkedList, listElem_t val);
 err_t PushBack (listResources * linkedList, listElem_t val);
@@ -182,7 +180,6 @@ err_t ListCtor(listResources * linkedList) {
 
     linkedList->List[linkedList->tail] = initSysCell;
 
-    // TODO: ListVerity
     LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
@@ -228,17 +225,9 @@ err_t PushBack(listResources * linkedList, listElem_t val) {
 
     ASSERT(linkedList);
 
-    //listIndex oldTail = linkedList->tail;
-    // listIndex oldTail = -1;
-    // GetBack(linkedList, &oldTail);
-
-    // TODO: check error
     err_t pushStat = PushAfter(linkedList, val, SYS_CELL_INDEX);
     IS_STAT_OK(pushStat);
 
-    //linkedList->tail = linkedList->List[oldTail].prev;
-
-    // TODO: check error
     err_t getBStat = GetBack(linkedList, &linkedList->tail);
     IS_STAT_OK(getBStat);
 
@@ -251,8 +240,6 @@ err_t GetFront(const listResources * linkedList, listIndex * head) {
 
     ASSERT(linkedList);
     ASSERT(head);
-
-    // listIndex headIndex = linkedList->head;
 
     listIndex headIndex = linkedList->List[SYS_CELL_INDEX].prev;
 
@@ -273,6 +260,18 @@ err_t GetBack(const listResources * linkedList, listIndex * tail) {
     if (tailIndex < 0) return ERR_TAIL;
 
     *tail = tailIndex;
+
+    return ERR_OK;
+}
+
+err_t GetSize(const listResources * linkedList, size_t * size) {
+
+    ASSERT(linkedList);
+    ASSERT(size);
+
+    LIST_VERIFY(linkedList, stderr);
+
+    *size = linkedList->size;
 
     return ERR_OK;
 }
@@ -300,25 +299,6 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
     return ERR_GET_CELL;
 }
 
-/*
-TODO:
-err_t PushBack(val) {
-
-    listIndex newIndex = GetFreeCell(next);
-
-    List[tail].value = val;
-    List[tail].next  = newIndex;
-
-    List[newIndex].next  = listResource.tail; <-- previous tail index
-    List[newIndex].prev  = newIndex;          <-- pointer on its own
-    List[newIndex].value = 0;                 <-- tail's default value
-    listResource.tail    = newIndex;          <-- rewrite tail index
-
-    return ERR_OK;
-
-}
-*/
-
 err_t Erase(listResources * linkedList, listIndex position) {
 
     ASSERT(linkedList);
@@ -343,6 +323,8 @@ err_t Erase(listResources * linkedList, listIndex position) {
 err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position) {
 
     ASSERT(linkedList);
+
+    LIST_VERIFY(linkedList, stderr);
     
     listIndex newIndex = -1;
     if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
@@ -369,14 +351,15 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
 err_t PushBefore(listResources * linkedList, listElem_t value, listIndex position) {
 
     ASSERT(linkedList);
-
-    // TODO: ListVerify
+    LIST_VERIFY(linkedList, stderr);
+    
     return PushAfter(linkedList, value, linkedList->List[position].prev);
 }
 
 err_t Insert(listResources * linkedList, listElem_t value, listIndex position) {
 
     ASSERT(linkedList);
+    LIST_VERIFY(linkedList, stderr);
 
     return PushBefore(linkedList, value, linkedList->List[position].next);
 }
@@ -401,7 +384,6 @@ err_t CheckListErrors(  const listResources * linkedList,
     ASSERT(linkedList);
     ASSERT(stream);
     ASSERT(funcname);
-    ASSERT(line);
 
     err_t listStatus = ListVerity(linkedList);
 
