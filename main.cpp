@@ -552,7 +552,7 @@ static void WriteGraphLinks(FILE * stream, const listResources * linkedList, lis
 
     listIndex next = linkedList->List[i].next;
     listIndex prev = linkedList->List[i].prev;
-    listIndex back = (listIndex)linkedList->capacity;  // Drawing-only copy of cell 0.
+    listIndex back = linkedList->capacity;  // Drawing-only copy of cell 0.
 
     if (next != FREE_FLAG) {
         if (next < 0 || next >= back) {
@@ -579,13 +579,13 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
     ASSERT(stream);
     ASSERT(linkedList);
 
-    fprintf(stream, "digraph {\nrankdir=LR;\nranksep=0.5;\n"
+    fprintf(stream, "digraph {\nrankdir=LR;\nranksep=0.5;\nsplines=ortho;\n"
                     "node [shape=record, fontname=Arial, style=filled, fillcolor=\"#EEF4FF\"];\n");
 
     const listMember sys = linkedList->List[SYS_CELL_INDEX];
 
     if (linkedList->size || sys.prev > 0)
-        fprintf(stream, "n%zu [label=\"[0] SYS (return)\", fillcolor=\"#7ea46d\"];\n", linkedList->capacity);
+        fprintf(stream, "n%zu [label=\"[0] SYS\", fillcolor=\"#7ea46d\"];\n", linkedList->capacity);
 
     listIndex lastFree = FREE_FLAG;
 
@@ -594,19 +594,23 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
         const listMember cell = linkedList->List[i];
         fprintf(stream, "n%zd [label=\"{index = %zd", i, i);
 
-        // TODO: new figures for this
         if (i == 0) fprintf(stream, " SYS");
-        if (i == sys.next) fprintf(stream, " TAIL");
-        if (i == sys.prev) fprintf(stream, " HEAD");
         fprintf(stream, "} | {prev = %zd | %lg | next = %zd}\"];\n", cell.prev, cell.value, cell.next);
         if (i == 0) fprintf(stream, "n0 [fillcolor=\"#7ea46d\"];\n");
 
         if (i != 0 && cell.next == FREE_FLAG && cell.prev == FREE_FLAG) {
             fprintf(stream, "n%zd [fillcolor=lightgrey];\n", i);
-            if (lastFree == FREE_FLAG) fprintf(stream, "{ rank=same; n0; n%zd; }\n", i);
+            if (lastFree == FREE_FLAG)
+                fprintf(stream, "{ rank=same; n0; n%zd; }\n"
+                                "freeLabel [shape=plain, style=\"\", fontsize=18, fontcolor=black, label=\"Free cells\"];\n"
+                                "freeLabel -> n%zd [style=invis, weight=100];\n", i, i);
             else fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", lastFree, i);
             lastFree = i;
         } else WriteGraphLinks(stream, linkedList, i);
+        if (i == sys.prev)
+            fprintf(stream, "{ rank=same; HEAD [shape=box]; n%zd; } HEAD -> n%zd:n;\n", i, i);
+        if (i == sys.next)
+            fprintf(stream, "{ rank=same; TAIL [shape=box]; n%zd; } TAIL -> n%zd:n;\n", i, i);
     }
     fprintf(stream, "}\n");
 }
