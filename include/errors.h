@@ -17,6 +17,9 @@ enum ERRORS {
     ERR_MEMORY,
     ERR_FILEOPEN,
     ERR_SYSTEM,
+    ERR_HTML,
+    ERR_HEAD,
+    ERR_TAIL,
 };
 
 #endif

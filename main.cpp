@@ -73,6 +73,9 @@ err_t ListDtor(listResources * linkedList);
 
 err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
+err_t GetFront(const listResources * linkedList, listIndex * head);
+err_t GetBack (const listResources * linkedList, listIndex * tail);
+
 err_t PushFront(listResources * linkedList, listElem_t val);
 
 err_t PushAfter (listResources * linkedList, listElem_t value, listIndex position);
@@ -121,9 +124,6 @@ int main() {
         PushFront(&linkedList, i);
 
         ListDump(&linkedList, i, htmlStream);
-
-        //WriteTextDump(stderr, &linkedList);
-
     }
 
     
@@ -205,6 +205,34 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
     PushAfter(linkedList, val, oldHead);
 
     linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
+
+    return ERR_OK;
+}
+
+err_t GetFront(const listResources * linkedList, listIndex * head) {
+
+    ASSERT(linkedList);
+    ASSERT(head);
+
+    listIndex headIndex = linkedList->head;
+
+    if (headIndex < 0) return ERR_HEAD;
+
+    *head = headIndex;
+
+    return ERR_OK;
+}
+
+err_t GetBack(const listResources * linkedList, listIndex * tail) {
+
+    ASSERT(linkedList);
+    ASSERT(tail);
+
+    listIndex tailIndex = linkedList->tail;
+
+    if (tailIndex < 0) return ERR_TAIL;
+
+    *tail = tailIndex;
 
     return ERR_OK;
 }
