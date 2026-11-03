@@ -1,4 +1,5 @@
 /*  TODO: err_t resize(up/down, List)
+    TODO: GetSize
     TODO: use getFront getBack everywhere
     TODO: head, tail, free elem in object graph
 
@@ -32,7 +33,10 @@ typedef int    err_t;
 #define LIST_ELEM_FORMAT "%lg"
 
 #ifdef VERIFY
-#define LIST_VERIFY(linkedList, stream) CheckListErrors(linkedList, stream, __func__, __LINE__)
+#define LIST_VERIFY(linkedList, stream) do { \
+                                            err_t errStat = CheckListErrors(linkedList, stream, __func__, __LINE__); \
+                                            if (errStat != ERR_OK) return errStat;                                   \
+                                        } while (0)
 #else
 #define LIST_VERIFY(linkedList, stream) (void)0
 #endif
@@ -207,11 +211,13 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
     // listIndex oldHead = linkedList->head;
 
     // TODO: check error
-    PushBefore(linkedList, val, SYS_CELL_INDEX);
+    err_t pushStat = PushBefore(linkedList, val, SYS_CELL_INDEX);
+    IS_STAT_OK(pushStat);
 
     // linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
 
-    GetFront(linkedList, &linkedList->head);
+    err_t getFStat = GetFront(linkedList, &linkedList->head);
+    IS_STAT_OK(getFStat);
 
     LIST_VERIFY(linkedList, stderr);
 
@@ -227,12 +233,14 @@ err_t PushBack(listResources * linkedList, listElem_t val) {
     // GetBack(linkedList, &oldTail);
 
     // TODO: check error
-    PushAfter(linkedList, val, SYS_CELL_INDEX);
+    err_t pushStat = PushAfter(linkedList, val, SYS_CELL_INDEX);
+    IS_STAT_OK(pushStat);
 
     //linkedList->tail = linkedList->List[oldTail].prev;
 
     // TODO: check error
-    GetBack(linkedList, &linkedList->tail);
+    err_t getBStat = GetBack(linkedList, &linkedList->tail);
+    IS_STAT_OK(getBStat);
 
     LIST_VERIFY(linkedList, stderr);
 
@@ -414,26 +422,31 @@ err_t ListVerity(const listResources * linkedList) {
 
     ASSERT(linkedList);
 
-    if (linkedList->size > linkedList->capacity)           return ERR_SIZE;
+    if (linkedList->size >= linkedList->capacity)           return ERR_SIZE;
     if (!IsPoison(linkedList->List[SYS_CELL_INDEX].value)) return ERR_SYS_CELL;
 
-    listIndex start = linkedList->tail;
-    listIndex end   = linkedList->head;
-    size_t maxCount = linkedList->size;
+    listIndex start = SYS_CELL_INDEX;
+    size_t    size  = linkedList->size;
+    listIndex end   = 0;
+    err_t getFStat  = GetFront(linkedList, &end);
+    IS_STAT_OK(getFStat);
 
     listIndex currIndex = start;
 
     size_t count = 0;
 
-    while (linkedList->List[currIndex].next != end) {
-        if (count > maxCount) return ERR_DISRUPT;
+    while (linkedList->List[currIndex].next != start) {
+        if (count > size) return ERR_DISRUPT;
 
         listIndex newNext = linkedList->List[currIndex].next;
-        if (newNext != -1 && newNext < 0) return ERR_DISRUPT;
+
+        if (!(newNext >= 0 && newNext < linkedList->capacity)) return ERR_DISRUPT;
 
         currIndex = linkedList->List[currIndex].next;
         count++;
     }
+
+    if (count != size) return ERR_DISRUPT;
 
     return ERR_OK;
 
