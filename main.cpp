@@ -77,6 +77,7 @@ err_t GetFront(const listResources * linkedList, listIndex * head);
 err_t GetBack (const listResources * linkedList, listIndex * tail);
 
 err_t PushFront(listResources * linkedList, listElem_t val);
+err_t PushBack (listResources * linkedList, listElem_t val);
 
 err_t PushAfter (listResources * linkedList, listElem_t value, listIndex position);
 err_t PushBefore(listResources * linkedList, listElem_t value, listIndex position);
@@ -126,7 +127,12 @@ int main() {
         ListDump(&linkedList, i, htmlStream);
     }
 
+    PushBack(&linkedList, 111);
+    ListDump(&linkedList, 222, htmlStream);
     
+    PushBack(&linkedList, 112);
+    ListDump(&linkedList, 223, htmlStream);
+
     PushAfter(&linkedList, 69, 1);
     ListDump(&linkedList, 1, htmlStream);
     PushAfter(&linkedList, 67, 1);
@@ -202,9 +208,28 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
     
     listIndex oldHead = linkedList->head;
 
+    // TODO: check error
     PushAfter(linkedList, val, oldHead);
 
     linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
+
+    LIST_VERIFY(linkedList, stderr);
+
+    return ERR_OK;
+}
+
+err_t PushBack(listResources * linkedList, listElem_t val) {
+
+    ASSERT(linkedList);
+
+    listIndex oldTail = linkedList->tail;
+
+    // TODO: check error
+    PushBefore(linkedList, val, oldTail);
+
+    linkedList->tail = linkedList->List[oldTail].prev;
+
+    LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
 }
@@ -536,12 +561,19 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
 
     }
 
+    fprintf(stream, "nHead [shape=Mrecord; style=\"filled\"; fillcolor=\"#952a2a\"; label = \"{<head> HEAD}\"];\n");
+    fprintf(stream, "nTail [shape=Mrecord; style=\"filled\"; fillcolor=\"#952a2a\"; label = \"{<tail> TAIL}\"];\n");
+
     for (size_t i = 0; i < linkedList->capacity; i++) {
         listIndex next = linkedList->List[i].next;
         listIndex prev = linkedList->List[i].prev;
 
         if (next != -1) fprintf(stream, "n%zu:next:e -> n%zu:prev:w [color=\"#2563EB\"];\n", i, next);
         if (prev != -1) fprintf(stream, "n%zu:prev:s -> n%zu:data:s [color=\"#DC2626\"];\n", i, prev);
+
+        if (i == linkedList->head) fprintf(stream, "nHead -> n%zu:i:n [color=\"#DC2626\"];\n", i);
+        if (i == linkedList->tail) fprintf(stream, "nTail -> n%zu:i:n [color=\"#DC2626\"];\n", i);
+
     }
 
     fprintf(stream, "}\n");
