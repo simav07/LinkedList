@@ -96,6 +96,7 @@ err_t PrepareHTML(const char * filename, FILE ** stream);
 err_t GeneratePictureName(char ** pictureName, size_t count);
 err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
 err_t GetObjectGraph(const listResources * linkedList, char * pictureName);
+void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i);
 void  MakeGraphvizScript(FILE * stream, const listResources * linkedList);
 void  InsertObjectGraph(FILE * stream, const char * picturePath);
 
@@ -545,7 +546,7 @@ err_t GetObjectGraph(const listResources * linkedList, char * pictureName) {
     return ERR_OK;      
 }
 
-static void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i) {
+void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i) {
 
     ASSERT(stream);
     ASSERT(linkedList);
@@ -606,7 +607,9 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
                                 "freeLabel -> n%zd [style=invis, weight=100];\n", i, i);
             else fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", lastFree, i);
             lastFree = i;
-        } else WriteGraphLinks(stream, linkedList, i);
+        }
+        else WriteGraphLinks(stream, linkedList, i);
+        
         if (i == sys.prev)
             fprintf(stream, "{ rank=same; HEAD [shape=box]; n%zd; } HEAD -> n%zd:n;\n", i, i);
         if (i == sys.next)
