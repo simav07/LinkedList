@@ -545,47 +545,70 @@ err_t GetObjectGraph(const listResources * linkedList, char * pictureName) {
     return ERR_OK;      
 }
 
+static void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i) {
+
+    ASSERT(stream);
+    ASSERT(linkedList);
+
+    listIndex next = linkedList->List[i].next;
+    listIndex prev = linkedList->List[i].prev;
+    listIndex back = (listIndex)linkedList->capacity;  // Drawing-only copy of cell 0.
+
+    if (next != FREE_FLAG) {
+        if (next < 0 || next >= back) {
+            fprintf(stream, "n%zd -> \"invalid %zd\" [color=red];\n", i, next);
+        } else {
+            listIndex to = (next == 0 && i != 0) ? back : next;
+            bool paired = linkedList->List[next].prev == i;
+            if (i != to) fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", i, to);
+            fprintf(stream, "n%zd:e -> n%zd:w [constraint=false, %s];\n",
+                    i, to, paired ? "dir=both" : "color=red");
+        }
+    }
+
+    if (prev == FREE_FLAG) return;
+    listIndex from = (i == 0 && prev > 0) ? back : i;
+    if (prev < 0 || prev >= back)
+        fprintf(stream, "n%zd -> \"invalid %zd\" [color=red];\n", from, prev);
+    else if (linkedList->List[prev].next != i)
+        fprintf(stream, "n%zd:w -> n%zd:e [constraint=false, color=red];\n", from, prev);
+}
+
 void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
 
     ASSERT(stream);
     ASSERT(linkedList);
 
-    fprintf(stream, "digraph {\n"
-                              "rankdir=LR;\n"
-                              "ranksep=0.8;\n");
-    fprintf(stream, "node [shape=record, fontname = \"Arial\", style=filled, fillcolor=\"#EEF4FF\"];\n"
-                    "edge [fontname = \"Arial\", arrowsize=0.8;];\n\n");
-    
-    for (size_t i = 0; i < linkedList->capacity; i++) {
+    fprintf(stream, "digraph {\nrankdir=LR;\nranksep=0.5;\n"
+                    "node [shape=record, fontname=Arial, style=filled, fillcolor=\"#EEF4FF\"];\n");
 
-        if (i == SYS_CELL_INDEX) {
-            fprintf(stream, "n%zu [style=\"filled\"; fillcolor=\"#7ea46d\"; "
-                            "label=\"{<i> index = %zu} | {<prev> prev = %zd | <data> %lg | <next> next = %zd}\"];\n",
-                            i, i, linkedList->List[i].prev, linkedList->List[i].value, linkedList->List[i].next);
-        }
+    const listMember sys = linkedList->List[SYS_CELL_INDEX];
 
-        fprintf(stream, "n%zu [label=\"{<i> index = %zu} | {<prev> prev = %zd | <data> %lg | <next> next = %zd}\"];\n",
-                            i, i, linkedList->List[i].prev, linkedList->List[i].value, linkedList->List[i].next);
+    if (linkedList->size || sys.prev > 0)
+        fprintf(stream, "n%zu [label=\"[0] SYS (return)\", fillcolor=\"#7ea46d\"];\n", linkedList->capacity);
 
+    listIndex lastFree = FREE_FLAG;
+
+    for (listIndex i = 0; i < (listIndex)linkedList->capacity; i++) {
+
+        const listMember cell = linkedList->List[i];
+        fprintf(stream, "n%zd [label=\"{index = %zd", i, i);
+
+        // TODO: new figures for this
+        if (i == 0) fprintf(stream, " SYS");
+        if (i == sys.next) fprintf(stream, " TAIL");
+        if (i == sys.prev) fprintf(stream, " HEAD");
+        fprintf(stream, "} | {prev = %zd | %lg | next = %zd}\"];\n", cell.prev, cell.value, cell.next);
+        if (i == 0) fprintf(stream, "n0 [fillcolor=\"#7ea46d\"];\n");
+
+        if (i != 0 && cell.next == FREE_FLAG && cell.prev == FREE_FLAG) {
+            fprintf(stream, "n%zd [fillcolor=lightgrey];\n", i);
+            if (lastFree == FREE_FLAG) fprintf(stream, "{ rank=same; n0; n%zd; }\n", i);
+            else fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", lastFree, i);
+            lastFree = i;
+        } else WriteGraphLinks(stream, linkedList, i);
     }
-
-    fprintf(stream, "nHead [shape=Mrecord; style=\"filled\"; fillcolor=\"#952a2a\"; label = \"{<head> HEAD}\"];\n");
-    fprintf(stream, "nTail [shape=Mrecord; style=\"filled\"; fillcolor=\"#952a2a\"; label = \"{<tail> TAIL}\"];\n");
-
-    for (size_t i = 0; i < linkedList->capacity; i++) {
-        listIndex next = linkedList->List[i].next;
-        listIndex prev = linkedList->List[i].prev;
-
-        if (next != -1) fprintf(stream, "n%zu:next:e -> n%zu:prev:w [color=\"#2563EB\"];\n", i, next);
-        if (prev != -1) fprintf(stream, "n%zu:prev:s -> n%zu:data:s [color=\"#DC2626\"];\n", i, prev);
-
-        if (i == linkedList->head) fprintf(stream, "nHead -> n%zu:i:n [color=\"#DC2626\"];\n", i);
-        if (i == linkedList->tail) fprintf(stream, "nTail -> n%zu:i:n [color=\"#DC2626\"];\n", i);
-
-    }
-
     fprintf(stream, "}\n");
-
 }
 
 void InsertObjectGraph(FILE * stream, const char * picturePath) {
