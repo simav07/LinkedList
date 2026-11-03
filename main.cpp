@@ -1,11 +1,9 @@
 /*  TODO: err_t resize(up/down, List)
-    TODO: system cell - another color
+    TODO: use getFront getBack everywhere
     TODO: head, tail, free elem in object graph
 
     TODO: arv flags for list dump
-    
-    TODO: GetFront()
-    TODO: GetBack()
+
     TODO: bit code for the list verify
 
 */
@@ -206,12 +204,14 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
 
     ASSERT(linkedList);
     
-    listIndex oldHead = linkedList->head;
+    // listIndex oldHead = linkedList->head;
 
     // TODO: check error
-    PushAfter(linkedList, val, oldHead);
+    PushBefore(linkedList, val, SYS_CELL_INDEX);
 
-    linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
+    // linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
+
+    GetFront(linkedList, &linkedList->head);
 
     LIST_VERIFY(linkedList, stderr);
 
@@ -223,13 +223,16 @@ err_t PushBack(listResources * linkedList, listElem_t val) {
     ASSERT(linkedList);
 
     //listIndex oldTail = linkedList->tail;
-    listIndex oldTail = -1;
-    GetBack(linkedList, &oldTail);
+    // listIndex oldTail = -1;
+    // GetBack(linkedList, &oldTail);
 
     // TODO: check error
-    PushBefore(linkedList, val, oldTail);
+    PushAfter(linkedList, val, SYS_CELL_INDEX);
 
-    linkedList->tail = linkedList->List[oldTail].prev;
+    //linkedList->tail = linkedList->List[oldTail].prev;
+
+    // TODO: check error
+    GetBack(linkedList, &linkedList->tail);
 
     LIST_VERIFY(linkedList, stderr);
 
@@ -241,7 +244,9 @@ err_t GetFront(const listResources * linkedList, listIndex * head) {
     ASSERT(linkedList);
     ASSERT(head);
 
-    listIndex headIndex = linkedList->head;
+    // listIndex headIndex = linkedList->head;
+
+    listIndex headIndex = linkedList->List[SYS_CELL_INDEX].prev;
 
     if (headIndex < 0) return ERR_HEAD;
 
@@ -467,7 +472,7 @@ err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
     err_t pathStat = GetPicturePath(FOLDER_WITH_PICTURES, pictureName, &picturePath);
     IS_STAT_OK(pathStat);
 
-    err_t getGraphStat = GetObjectGraph(linkedList, picturePath); // pictureName
+    err_t getGraphStat = GetObjectGraph(linkedList, picturePath);
     IS_STAT_OK(getGraphStat);
 
     InsertObjectGraph(stream, picturePath);
@@ -486,7 +491,7 @@ err_t GeneratePictureName(char ** pictureName, size_t count) {
     //! example of picture's name: 20261102_2020-1 - the 2nd of November, 20:20, 1st picture
     size_t nameLength = 20 + (int)(count / 10) + 1;
     char newName[nameLength] = "";
-
+// tmp 
     time_t mytime = time(NULL);
     struct tm * now = localtime(&mytime);
 
