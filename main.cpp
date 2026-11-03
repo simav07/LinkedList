@@ -222,7 +222,9 @@ err_t PushBack(listResources * linkedList, listElem_t val) {
 
     ASSERT(linkedList);
 
-    listIndex oldTail = linkedList->tail;
+    //listIndex oldTail = linkedList->tail;
+    listIndex oldTail = -1;
+    GetBack(linkedList, &oldTail);
 
     // TODO: check error
     PushBefore(linkedList, val, oldTail);
@@ -253,7 +255,7 @@ err_t GetBack(const listResources * linkedList, listIndex * tail) {
     ASSERT(linkedList);
     ASSERT(tail);
 
-    listIndex tailIndex = linkedList->tail;
+    listIndex tailIndex = linkedList->List[SYS_CELL_INDEX].next;
 
     if (tailIndex < 0) return ERR_TAIL;
 
@@ -555,6 +557,12 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
                     "edge [fontname = \"Arial\", arrowsize=0.8;];\n\n");
     
     for (size_t i = 0; i < linkedList->capacity; i++) {
+
+        if (i == SYS_CELL_INDEX) {
+            fprintf(stream, "n%zu [style=\"filled\"; fillcolor=\"#7ea46d\"; "
+                            "label=\"{<i> index = %zu} | {<prev> prev = %zd | <data> %lg | <next> next = %zd}\"];\n",
+                            i, i, linkedList->List[i].prev, linkedList->List[i].value, linkedList->List[i].next);
+        }
 
         fprintf(stream, "n%zu [label=\"{<i> index = %zu} | {<prev> prev = %zd | <data> %lg | <next> next = %zd}\"];\n",
                             i, i, linkedList->List[i].prev, linkedList->List[i].value, linkedList->List[i].next);
