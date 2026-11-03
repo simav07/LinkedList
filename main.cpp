@@ -64,6 +64,7 @@ const ssize_t    SYS_CELL_INDEX   = 0;
 // TODO: get if from console
 const char FOLDER_WITH_PICTURES[]      = "graphs";
 const char FILE_SCRIPT_FOR_GRAPHVIZ[]  = "graph.dot";
+const char DUMP_FILENAME[]             = "dump.html";
 
 bool IsPoison(double number);
 
@@ -86,6 +87,7 @@ err_t CheckListErrors(const listResources * linkedList,
                       const int line);
     
 err_t ListDump(const listResources * linkedList, size_t count, FILE * stream);
+err_t PrepareHTML(const char * filename, FILE ** stream);
 
 err_t GeneratePictureName(char ** pictureName, size_t count);
 err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
@@ -104,19 +106,13 @@ int main() {
     listResources linkedList = {};
 
     err_t prepareStat = ListCtor(&linkedList);
-    if (prepareStat != ERR_OK) {
-        printf("Error of constructor. Error code: %d\n", prepareStat);
-        return 1;
-    }
+    IS_STAT_OK(prepareStat);
 
     system("del /f /q \"graphs\\*.*\"");
 
-    FILE * htmlStream = fopen("dump.html", "w");
-    if (htmlStream == NULL) {
-        PRINT_DEBUG("html error\n");
-        return 1;
-    }
-    fprintf(htmlStream, "<pre>\n");
+    FILE * htmlStream = NULL;
+    err_t htmlStat = PrepareHTML(DUMP_FILENAME, &htmlStream);
+    IS_STAT_OK(htmlStat);
 
     ListDump(&linkedList, 0, htmlStream);
 
@@ -184,38 +180,31 @@ err_t ListCtor(listResources * linkedList) {
     return ERR_OK;
 }
 
+err_t PrepareHTML(const char * filename, FILE ** stream) {
+
+    ASSERT(filename);
+
+    FILE * htmlStream = fopen(filename, "w");
+    if (htmlStream == NULL) {
+        PRINT_DEBUG("html error\n");
+        return ERR_HTML;
+    }
+    fprintf(htmlStream, "<pre>\n");
+    
+    *stream = htmlStream;
+
+    return ERR_OK;
+}
+
 err_t PushFront(listResources * linkedList, listElem_t val) {
 
     ASSERT(linkedList);
-
-    /*
-    listIndex newIndex = -1;
-    if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
-        printf("Error of searching a free cell\n");
-        return ERR_PUSHFRONT;
-    } */
     
     listIndex oldHead = linkedList->head;
 
     PushAfter(linkedList, val, oldHead);
 
     linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
-    
-    // linkedList->List[linkedList->head].next = -1;
-    // linkedList->List[0].prev = 0;
-    
-    /*
-    // linkedList->List[oldHead].value = val;
-    linkedList->List[oldHead].next  = newIndex;
-    // linkedList->List[newIndex].value = val;
-
-    listMember newHead = {.value = val, .next = -1, .prev = oldHead};// FIXME: val = poison (default)
-
-    linkedList->List[newIndex] = newHead;
-
-    linkedList->head = newIndex;  // <-- rewrite head index
-    linkedList->size++;
-    */
 
     return ERR_OK;
 }
@@ -313,26 +302,8 @@ err_t PushBefore(listResources * linkedList, listElem_t value, listIndex positio
 
     ASSERT(linkedList);
 
-    listIndex newIndex = -1;
-    if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
-        printf("Error of searching a free cell\n");
-        return ERR_PUSHBEFORE;
-    }
-
-    listIndex oldPrev = linkedList->List[position].prev;
-
-    listMember newMember = {.value = value, .next = position, .prev = oldPrev};
-
-    linkedList->List[position].prev = newIndex;
-    linkedList->List[oldPrev].next  = newIndex;
-
-    linkedList->List[newIndex] = newMember;
-    linkedList->size++;
-
     // TODO: ListVerify
-    LIST_VERIFY(linkedList, stderr);
-
-    return ERR_OK;
+    return PushAfter(linkedList, value, linkedList->List[position].prev);
 }
 
 err_t Insert(listResources * linkedList, listElem_t value, listIndex position) {
