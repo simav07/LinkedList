@@ -144,6 +144,9 @@ int main() {
 
     PushBack(&linkedList, 400);
     LIST_DUMP(&linkedList, htmlStream);
+
+    linkedList.List[1].next = 100;
+    LIST_DUMP(&linkedList, htmlStream);
     
     //ListDump(&linkedList, htmlStream);
 
@@ -449,10 +452,12 @@ err_t CheckListErrors(  const listResources * linkedList,
 
     if (listStatus == ERR_OK) return ERR_OK;
 
+    fprintf(stream, "___________________________________________________________\n");
     fprintf(stream, "  <<<<< LIST VERIFY >>>>>   \n");
     fprintf(stream, "     ! ERROR DETECTED !     \n");
     fprintf(stream, "Function: %s:%d\n", funcname, line);
     fprintf(stream, "Description: %s\n", GetErrorDescription(listStatus));
+    fprintf(stream, "___________________________________________________________\n");
 
     fflush(stream);
     return listStatus;
@@ -537,7 +542,7 @@ err_t ListDump(const listResources * linkedList, FILE * stream) {
     static size_t nextDump = 0;
     size_t count = nextDump++;
 
-    fprintf(stream, "<h2><<<<<<<<<<<<< LIST DUMP %zu >>>>>>>>>>>>>>>></h2>\n", count);
+    fprintf(stream, "<h2 style=\"text-align: center;\"><<<<< LIST DUMP %zu >>>>></h2>\n", count);
 
     char * pictureName = NULL;
     char * picturePath = NULL;
@@ -555,7 +560,9 @@ err_t ListDump(const listResources * linkedList, FILE * stream) {
 
     fprintf(stream, "<p>");
     WriteTextDump(stream, linkedList);
+    fprintf(stream, "<h2 style=\"text-align: center;\">");
     LIST_VERIFY(linkedList, stream);
+    fprintf(stream, "\n</h1>");
 
     return ERR_OK;
 }
@@ -635,22 +642,22 @@ void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex 
 
     if (next != FREE_FLAG) {
         if (next < 0 || next >= back) {
-            fprintf(stream, "n%zd -> \"invalid %zd\" [color=red];\n", i, next);
+            fprintf(stream, "n%zd -> \"invalid %zd\" [color=\"#FF0000\"];\n", i, next);
         } else {
             listIndex to = (next == 0 && i != 0) ? back : next;
             bool paired = linkedList->List[next].prev == i;
             if (i != to) fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", i, to);
             fprintf(stream, "n%zd:e -> n%zd:w [constraint=false, %s];\n",
-                    i, to, paired ? "dir=both" : "color=red");
+                    i, to, paired ? "dir=both" : "color=\"#FF0000\"");
         }
     }
 
     if (prev == FREE_FLAG) return;
     listIndex from = (i == 0 && prev > 0) ? back : i;
     if (prev < 0 || prev >= back)
-        fprintf(stream, "n%zd -> \"invalid %zd\" [color=red];\n", from, prev);
+        fprintf(stream, "n%zd -> \"invalid %zd\" [color=\"#FF0000\"];\n", from, prev);
     else if (linkedList->List[prev].next != i)
-        fprintf(stream, "n%zd:w -> n%zd:e [constraint=false, color=red];\n", from, prev);
+        fprintf(stream, "n%zd:w -> n%zd:e [constraint=false, color=\"#FF0000\"];\n", from, prev);
 }
 
 void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
@@ -659,12 +666,14 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
     ASSERT(linkedList);
 
     fprintf(stream, "digraph {\nrankdir=LR;\nranksep=0.5;\nsplines=ortho;\n"
-                    "node [shape=record, fontname=Arial, style=filled, fillcolor=\"#EEF4FF\"];\n");
+                    "bgcolor=\"#FFFFFF\";\n"
+                    "edge [color=\"#000000\", penwidth=2.0,];\n"
+                    "node [color=\"#000000\", fontcolor=\"#000000\", penwidth=2.0, shape=record, fontname=\"Helvetica-Bold\", style=filled, fillcolor=\"#EEF4FF\"];\n");
 
     const listMember sys = linkedList->List[SYS_CELL_INDEX];
 
     if (linkedList->size || sys.prev > 0)
-        fprintf(stream, "n%zu [label=\"[0] SYS\", fillcolor=\"#7ea46d\"];\n", linkedList->capacity);
+        fprintf(stream, "n%zu [label=\"[0] SYS\", fillcolor=\"#7EA46D\"];\n", linkedList->capacity);
 
     listIndex lastFree = FREE_FLAG;
 
@@ -675,13 +684,13 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
 
         if (i == 0) fprintf(stream, " SYS");
         fprintf(stream, "} | {prev = %zd | %lg | next = %zd}\"];\n", cell.prev, cell.value, cell.next);
-        if (i == 0) fprintf(stream, "n0 [fillcolor=\"#7ea46d\"];\n");
+        if (i == 0) fprintf(stream, "n0 [fillcolor=\"#7EA46D\"];\n");
 
         if (i != 0 /* && cell.next == FREE_FLAG */ && cell.prev == FREE_FLAG) {
-            fprintf(stream, "n%zd [fillcolor=lightgrey];\n", i);
+            fprintf(stream, "n%zd [fillcolor=\"#D3D3D3\"];\n", i);
             if (lastFree == FREE_FLAG)
                 fprintf(stream, "{ rank=same; n0; n%zd; }\n"
-                                "freeLabel [shape=plain, style=\"\", fontsize=18, fontcolor=black, label=\"Free cells\"];\n"
+                                "freeLabel [shape=plain, style=\"\", fontsize=18, label=\"Free cells\"];\n"
                                 "freeLabel -> n%zd [style=invis, weight=100];\n", i, i);
             else fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", lastFree, i);
             lastFree = i;
@@ -689,9 +698,9 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
         else WriteGraphLinks(stream, linkedList, i);
         
         if (i == sys.prev)
-            fprintf(stream, "{ rank=same; HEAD [shape=box]; n%zd; } HEAD -> n%zd:n;\n", i, i);
+            fprintf(stream, "{ rank=same; HEAD [shape=Mrecord, fillcolor=\"#EEF4FF\"]; n%zd; } HEAD -> n%zd:n;\n", i, i);
         if (i == sys.next)
-            fprintf(stream, "{ rank=same; TAIL [shape=box]; n%zd; } TAIL -> n%zd:n;\n", i, i);
+            fprintf(stream, "{ rank=same; TAIL [shape=Mrecord, fillcolor=\"#EEF4FF\"]; n%zd; } TAIL -> n%zd:n;\n", i, i);
     }
     fprintf(stream, "}\n");
 }
@@ -701,7 +710,9 @@ void InsertObjectGraph(FILE * stream, const char * picturePath) {
     ASSERT(stream);
     ASSERT(picturePath);
 
-    fprintf(stream, "<img src=\"../%s\" style=\"width: 60%%;\">\n", picturePath);
+    fprintf(stream, "<a href=\"../%s\"><img src=\"../%s\" alt=\"List graph\" "
+                    "style=\"display: block; width: clamp(40em, 80%%, 80em); max-width: 100%%; "
+                    "height: auto; margin: auto;\"></a>\n", picturePath, picturePath);
 
 }
 
@@ -710,7 +721,6 @@ void WriteTextDump(FILE * stream, const listResources * linkedList) {
     ASSERT(linkedList);
     ASSERT(stream);
 
-    fprintf(stream, "\n              <<<<< LIST DUMP >>>>>             \n");
     fprintf(stream, "__________________________________________________\n");
     fprintf(stream, "|   INDEX   |    VALUE    | PREVIOUS |    NEXT   |\n");
     fprintf(stream, "--------------------------------------------------\n");
@@ -738,6 +748,7 @@ void WriteTextDump(FILE * stream, const listResources * linkedList) {
     fprintf(stream, ">>> CAPACITY:   %zd\n", linkedList->capacity);
     fprintf(stream, ">>> SIZE:       %zd\n", linkedList->size);
     fprintf(stream, ">>> FREE CELLS: %zd\n", linkedList->capacity - linkedList->size - 1);
+    fprintf(stream, "\n>>> INDEX OF THE FREE CELL: %zd\n", linkedList->freeCell);
     fprintf(stream, "__________________________________________________\n");
 
     fflush(stream);
