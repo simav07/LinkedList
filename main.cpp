@@ -99,7 +99,7 @@ err_t CheckListErrors(const listResources * linkedList,
                       const char * funcname,
                       const int line);
     
-err_t ListDump   (const listResources * linkedList, /*size_t count,*/ FILE * stream);
+err_t ListDump   (const listResources * linkedList, FILE * stream);
 err_t PrepareHTML(FILE ** stream);
 
 err_t GeneratePictureName(char ** pictureName, size_t count);
@@ -502,12 +502,26 @@ const char * GetErrorDescription(err_t errorCode) {
 
     switch(errorCode) {
 
-        case (ERR_OK):      return "All good";
-        case (ERR_SIZE):    return "Incorrect size"; // FIXME: write good description
-        case (ERR_DISRUPT): return "Disruption of indexes in the list";
+        case (ERR_OK):         return "All good";
+        case (ERR_CALLOC):     return "Failed to allocate the list array";
+        case (ERR_GET_CELL):   return "Failed to obtain a free cell";
+        case (ERR_PUSHFRONT):  return "Failed to insert at the front of the list";
+        case (ERR_PUSHBEFORE): return "Failed to insert before the specified cell";
+        case (ERR_ERASE):      return "Cannot erase a cell with a poison value";
+        case (ERR_LIST):       return "Invalid list";
+        case (ERR_SIZE):       return "List size must be less than capacity";
+        case (ERR_DISRUPT):    return "List links are inconsistent with the ring or its size";
+        case (ERR_SYS_CELL):   return "The system cell must contain the poison value";
+        case (ERR_SNPRINTF):   return "Failed to format the dump name, path or command";
+        case (ERR_MEMORY):     return "Memory allocation failed";
+        case (ERR_FILEOPEN):   return "Failed to open the Graphviz script file";
+        case (ERR_SYSTEM):     return "The Graphviz command failed";
+        case (ERR_HTML):       return "Failed to prepare the HTML dump";
+        case (ERR_HEAD):       return "Invalid head index";
+        case (ERR_TAIL):       return "Invalid tail index";
+        case (ERR_FREE_INDEX): return "Invalid free cell index";
 
-        // TODO: description
-        default: break;
+        default: ASSERT(0);
 
     }
 
@@ -515,7 +529,7 @@ const char * GetErrorDescription(err_t errorCode) {
 
 }
 
-err_t ListDump(const listResources * linkedList, /* size_t count,*/ FILE * stream) {
+err_t ListDump(const listResources * linkedList, FILE * stream) {
 
     ASSERT(linkedList);
     ASSERT(stream);
