@@ -2,6 +2,11 @@
 
 Fast doubly linked list, implemented as an array of structures. The complexity of element insertion and deletion algorithms is *O(1)*.
 
+**Element of list:**
+
+| Index to the previous | Value | Index to the next |
+| :--: | :--: | :--: |
+
 # Usage
 
 ...
@@ -24,9 +29,8 @@ Fast doubly linked list, implemented as an array of structures. The complexity o
 | ... | ... |
 | ... | ... |
 
+# Debug
 
-**Element of list:**
+Macro **VERIFY** activates ListVerify - a function what checking all possible errors with list. Example of working this feature: 
 
-| Index to the previous | Value | Index to the next |
-| :--: | :--: | :--: |
-
+!! Picture with example of working verification

@@ -93,7 +93,7 @@ err_t CheckListErrors(const listResources * linkedList,
                       const char * funcname,
                       const int line);
     
-err_t ListDump   (const listResources * linkedList, size_t count, FILE * stream);
+err_t ListDump   (const listResources * linkedList, /*size_t count,*/ FILE * stream);
 err_t PrepareHTML(FILE ** stream);
 
 err_t GeneratePictureName(char ** pictureName, size_t count);
@@ -120,20 +120,20 @@ int main() {
     err_t htmlStat = PrepareHTML(&htmlStream);
     IS_STAT_OK(htmlStat);
 
-    ListDump(&linkedList, 0, htmlStream);
+    ListDump(&linkedList, htmlStream);
 
     PushFront(&linkedList, 100);
-    ListDump(&linkedList, 1, htmlStream);
+    ListDump(&linkedList, htmlStream);
     PushFront(&linkedList, 200);
-    ListDump(&linkedList, 2, htmlStream);
+    ListDump(&linkedList, htmlStream);
     PushFront(&linkedList, 300);
-    ListDump(&linkedList, 3, htmlStream);
+    ListDump(&linkedList, htmlStream);
 
     PushBack(&linkedList, 400);
-    ListDump(&linkedList, 4, htmlStream);
+    ListDump(&linkedList, htmlStream);
 
     Erase(&linkedList, 3);
-    ListDump(&linkedList, 5, htmlStream);
+    ListDump(&linkedList, htmlStream);
     
     LIST_VERIFY(&linkedList, htmlStream);
     
@@ -498,10 +498,13 @@ const char * GetErrorDescription(err_t errorCode) {
 
 }
 
-err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
+err_t ListDump(const listResources * linkedList, /* size_t count,*/ FILE * stream) {
 
     ASSERT(linkedList);
     ASSERT(stream);
+
+    static size_t nextDump = 0;
+    size_t count = nextDump++;
 
     fprintf(stream, "<h2><<<<<<<<<<<<< LIST DUMP %zu >>>>>>>>>>>>>>>></h2>\n", count);
 
