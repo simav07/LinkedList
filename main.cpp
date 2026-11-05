@@ -1,11 +1,3 @@
-/*  TODO: use getFront getBack everywhere
-
-    TODO: arv flags for list dump
-
-    TODO: bit code for the list verify
-
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -100,7 +92,7 @@ err_t PrepareHTML(const char * filename, FILE ** stream);
 err_t GeneratePictureName(char ** pictureName, size_t count);
 err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
 err_t GetObjectGraph(const listResources * linkedList, char * pictureName);
-void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i);
+void  WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i);
 void  MakeGraphvizScript(FILE * stream, const listResources * linkedList);
 void  InsertObjectGraph(FILE * stream, const char * picturePath);
 
@@ -218,7 +210,6 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
     
     // listIndex oldHead = linkedList->head;
 
-    // TODO: check error
     err_t pushStat = PushBefore(linkedList, val, SYS_CELL_INDEX);
     IS_STAT_OK(pushStat);
 
@@ -314,7 +305,7 @@ err_t ListResize(listResources * linkedList, size_t newCapacity) {
     }
 
     else {
-        
+
         linkedList->freeCell = LAST_FREE_INDEX;
         for (size_t i = newCapacity - 1; i > 0; i--) {
             if (newList[i].prev != FREE_FLAG) continue;
@@ -558,18 +549,15 @@ err_t GeneratePictureName(char ** pictureName, size_t count) {
 
     ASSERT(pictureName);
 
-    //! example of picture's name: 20261102_2020-1 - the 2nd of November, 20:20, 1st picture
-    size_t nameLength = 20 + (int)(count / 10) + 1;
-    char newName[nameLength] = "";
-// tmp 
+    char newName[64] = "";
     time_t mytime = time(NULL);
     struct tm * now = localtime(&mytime);
 
-    int printStat = snprintf(newName, nameLength, "%d_%dh%dm-%zu.png",
-                             now->tm_yday, now->tm_hour,
-                             now->tm_min, count);
+    int printStat = snprintf(newName, sizeof(newName), "%04d%02d%02d_%02d%02d_%02d%02d-%zu.png",
+                             now->tm_year + 1900, now->tm_mon + 1, now->tm_mday,
+                             now->tm_hour, now->tm_min, now->tm_min, now->tm_sec, count);
     
-    if (printStat > nameLength || printStat <= 0){
+    if (printStat <= 0 || (size_t)printStat >= sizeof(newName)){
         PRINT_DEBUG("ERROR: %d", printStat);
         return ERR_SNPRINTF;
     }
