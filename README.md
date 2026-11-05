@@ -4,6 +4,7 @@ Fast doubly-linked list, implemented as an array of structures. The complexity o
 
 **Element of list:**
 | Index of element |
+| :--: |
 | Index to the previous | Value | Index to the next |
 | :--: | :--: | :--: |
 
