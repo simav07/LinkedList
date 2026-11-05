@@ -1,3 +1,9 @@
+/*
+
+TODO: error descriptions
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -86,15 +92,15 @@ err_t CheckListErrors(const listResources * linkedList,
                       const char * funcname,
                       const int line);
     
-err_t ListDump(const listResources * linkedList, size_t count, FILE * stream);
+err_t ListDump   (const listResources * linkedList, size_t count, FILE * stream);
 err_t PrepareHTML(FILE ** stream);
 
 err_t GeneratePictureName(char ** pictureName, size_t count);
-err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
-err_t GetObjectGraph(const listResources * linkedList, char * pictureName);
-void  WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex i);
-void  MakeGraphvizScript(FILE * stream, const listResources * linkedList);
-void  InsertObjectGraph(FILE * stream, const char * picturePath);
+err_t GetPicturePath     (const char * sourceFolder, const char * pictureName, char ** picturePath);
+err_t GetObjectGraph     (const listResources * linkedList, char * pictureName);
+void  WriteGraphLinks    (FILE * stream, const listResources * linkedList, listIndex i);
+void  MakeGraphvizScript (FILE * stream, const listResources * linkedList);
+void  InsertObjectGraph  (FILE * stream, const char * picturePath);
 
 void WriteTextDump(FILE * stream, const listResources * linkedList);
 
@@ -221,12 +227,8 @@ err_t PushFront(listResources * linkedList, listElem_t val) {
 
     ASSERT(linkedList);
     
-    // listIndex oldHead = linkedList->head;
-
     err_t pushStat = PushBefore(linkedList, val, SYS_CELL_INDEX);
     IS_STAT_OK(pushStat);
-
-    // linkedList->head = linkedList->List[oldHead].next;  // <-- rewrite head index
 
     err_t getFStat = GetFront(linkedList, &linkedList->head);
     IS_STAT_OK(getFStat);
@@ -351,21 +353,6 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
     linkedList->freeCell = newFreeIndex;
 
     return ERR_OK;
-    /*
-    // FIXME: make more effective algorithm
-    for (size_t i = 0; i < linkedList->capacity; i++) {
-
-        if (linkedList->List[i].next == FREE_FLAG &&
-            linkedList->List[i].prev == FREE_FLAG)  {
-            if (!IsPoison(linkedList->List[i].value)) return ERR_GET_CELL;
-
-            *newIndex = i;
-
-            return ERR_OK;
-        }
-    } */
-
-    // return ERR_GET_CELL;
 }
 
 err_t Erase(listResources * linkedList, listIndex position) {
@@ -377,9 +364,6 @@ err_t Erase(listResources * linkedList, listIndex position) {
 
     linkedList->List[linkedList->List[position].prev].next = linkedList->List[position].next;
     linkedList->List[linkedList->List[position].next].prev = linkedList->List[position].prev;
-
-    // linkedList->List[position].next = FREE_FLAG;
-    // linkedList->List[position].prev = FREE_FLAG;
 
     linkedList->List[position].prev = FREE_FLAG;
     linkedList->List[position].next = linkedList->freeCell;
@@ -394,7 +378,6 @@ err_t Erase(listResources * linkedList, listIndex position) {
     LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
-
 }
 
 err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position) {
@@ -420,7 +403,6 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
     LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
-
 }
 
 err_t PushBefore(listResources * linkedList, listElem_t value, listIndex position) {
@@ -448,7 +430,6 @@ err_t ListDtor(listResources * linkedList) {
     linkedList->size     = 0;
 
     return ERR_OK;
-
 }
 
 err_t CheckListErrors(  const listResources * linkedList,
