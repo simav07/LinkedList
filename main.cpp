@@ -54,11 +54,14 @@ struct listResources {
 
     listIndex head;
     listIndex tail;
+
+    listIndex freeCell;
 };
 
 const size_t     DEFAULT_CAPACITY = 10;
 const listElem_t LIST_POISON      = NAN;
 const ssize_t    FREE_FLAG        = -1;
+const ssize_t    LAST_FREE_INDEX  = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
 
 const char FOLDER_WITH_PICTURES[]      = "graphs";
@@ -169,17 +172,23 @@ err_t ListCtor(listResources * linkedList) {
     for (size_t i = 0; i < linkedList->capacity; i++) {
 
         linkedList->List[i].value = LIST_POISON;
-        linkedList->List[i].next  = FREE_FLAG;
-        linkedList->List[i].prev  = FREE_FLAG;
+        linkedList->List[i].prev = FREE_FLAG;
 
+        if (i == linkedList->capacity - 1) {
+            linkedList->List[i].next = FREE_FLAG;
+            break;
+        }
+        linkedList->List[i].next = i + 1;
     }
 
-    linkedList->tail = 0;
-    linkedList->head = 0;
+    linkedList->tail = SYS_CELL_INDEX;
+    linkedList->head = SYS_CELL_INDEX;
+
+    linkedList->freeCell = SYS_CELL_INDEX + 1;
 
     listMember initSysCell = {.value = LIST_POISON, .next = SYS_CELL_INDEX, .prev = SYS_CELL_INDEX};
 
-    linkedList->List[linkedList->tail] = initSysCell;
+    linkedList->List[SYS_CELL_INDEX] = initSysCell;
 
     LIST_VERIFY(linkedList, stderr);
 
@@ -284,6 +293,17 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 
     LIST_VERIFY(linkedList, stderr);
 
+    listIndex freeIndex = linkedList->freeCell;
+    if (freeIndex == LAST_FREE_INDEX) return ERR_GET_CELL;
+
+    *newIndex = freeIndex;
+
+    listIndex newFreeIndex = linkedList->List[freeIndex].next;
+    if (newFreeIndex <= 0 && newFreeIndex != LAST_FREE_INDEX) return ERR_FREE_INDEX;
+    linkedList->freeCell = newFreeIndex;
+
+    return ERR_OK;
+    /*
     // FIXME: make more effective algorithm
     for (size_t i = 0; i < linkedList->capacity; i++) {
 
@@ -295,9 +315,9 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 
             return ERR_OK;
         }
-    }
+    } */
 
-    return ERR_GET_CELL;
+    // return ERR_GET_CELL;
 }
 
 err_t Erase(listResources * linkedList, listIndex position) {
@@ -404,15 +424,19 @@ err_t ListVerity(const listResources * linkedList) {
     // TODO: more if
 
     ASSERT(linkedList);
+    
+    listIndex start     = SYS_CELL_INDEX;
+    size_t    size      = linkedList->size;
+    size_t    capacity  = linkedList->capacity;
+    listIndex end       = 0;
+    listIndex freeIndex = linkedList->freeCell;
+    err_t     getFStat  = GetFront(linkedList, &end);
+    IS_STAT_OK(getFStat);
 
-    if (linkedList->size >= linkedList->capacity)           return ERR_SIZE;
+    if (size >= capacity) return ERR_SIZE;
+    if (freeIndex != -1 && freeIndex <= 0) return ERR_FREE_INDEX;
     if (!IsPoison(linkedList->List[SYS_CELL_INDEX].value)) return ERR_SYS_CELL;
 
-    listIndex start = SYS_CELL_INDEX;
-    size_t    size  = linkedList->size;
-    listIndex end   = 0;
-    err_t getFStat  = GetFront(linkedList, &end);
-    IS_STAT_OK(getFStat);
 
     listIndex currIndex = start;
 
@@ -423,7 +447,7 @@ err_t ListVerity(const listResources * linkedList) {
 
         listIndex newNext = linkedList->List[currIndex].next;
 
-        if (!(newNext >= 0 && newNext < linkedList->capacity)) return ERR_DISRUPT;
+        if (!(newNext >= 0 && newNext < capacity)) return ERR_DISRUPT;
 
         currIndex = linkedList->List[currIndex].next;
         count++;
@@ -599,7 +623,7 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
         fprintf(stream, "} | {prev = %zd | %lg | next = %zd}\"];\n", cell.prev, cell.value, cell.next);
         if (i == 0) fprintf(stream, "n0 [fillcolor=\"#7ea46d\"];\n");
 
-        if (i != 0 && cell.next == FREE_FLAG && cell.prev == FREE_FLAG) {
+        if (i != 0 /* && cell.next == FREE_FLAG */ && cell.prev == FREE_FLAG) {
             fprintf(stream, "n%zd [fillcolor=lightgrey];\n", i);
             if (lastFree == FREE_FLAG)
                 fprintf(stream, "{ rank=same; n0; n%zd; }\n"
