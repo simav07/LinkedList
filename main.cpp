@@ -1,5 +1,4 @@
-/*  TODO: err_t resize(up/down, List)
-    TODO: use getFront getBack everywhere
+/*  TODO: use getFront getBack everywhere
 
     TODO: arv flags for list dump
 
@@ -9,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
@@ -17,9 +17,9 @@
 #include "include/errors.h"
 #include "include/debug.h"
 
-typedef double listElem_t;
+typedef double  listElem_t;
 typedef ssize_t listIndex;
-typedef int    err_t;
+typedef int     err_t;
 
 #define IS_STAT_OK(status)  do {                                        \
                                 if (status != ERR_OK) {                 \
@@ -72,6 +72,7 @@ bool IsPoison(double number);
 
 err_t ListCtor(listResources * linkedList);
 err_t ListDtor(listResources * linkedList);
+err_t ListResize(listResources * linkedList, size_t newCapacity);
 
 err_t GetFreeCell(listResources * linkedList, listIndex * newIndex);
 
@@ -286,6 +287,44 @@ err_t GetSize(const listResources * linkedList, size_t * size) {
     return ERR_OK;
 }
 
+err_t ListResize(listResources * linkedList, size_t newCapacity) {
+
+    size_t oldCapacity = linkedList->capacity;
+
+    for (size_t i = newCapacity; i < oldCapacity; i++) {
+        if (linkedList->List[i].prev != FREE_FLAG) return ERR_OK;
+    }
+
+    listMember * newList = (listMember *)realloc(linkedList->List, newCapacity * sizeof(listMember));
+    if (!newList) return ERR_MEMORY;
+
+    linkedList->List = newList;
+    linkedList->capacity = newCapacity;
+
+    if (newCapacity > oldCapacity) {
+        
+        for (size_t i = oldCapacity; i < newCapacity; i++) {
+            newList[i].value = LIST_POISON;
+            newList[i].prev  = FREE_FLAG;
+            newList[i].next  = i + 1;
+        }
+
+        newList[newCapacity - 1].next = linkedList->freeCell;
+        linkedList->freeCell = oldCapacity;
+    }
+
+    else {
+        
+        linkedList->freeCell = LAST_FREE_INDEX;
+        for (size_t i = newCapacity - 1; i > 0; i--) {
+            if (newList[i].prev != FREE_FLAG) continue;
+            newList[i].next = linkedList->freeCell;
+            linkedList->freeCell = i;
+        }
+    }
+    return ERR_OK;
+}
+
 err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 
     ASSERT(linkedList);
@@ -293,8 +332,13 @@ err_t GetFreeCell(listResources * linkedList, listIndex * newIndex) {
 
     LIST_VERIFY(linkedList, stderr);
 
+    if (linkedList->freeCell == LAST_FREE_INDEX) {
+        if (linkedList->size != linkedList->capacity - 1) return ERR_FREE_INDEX;
+        if (linkedList->capacity > SIZE_MAX / sizeof(listMember) / 2) return ERR_MEMORY;
+        err_t resizeStat = ListResize(linkedList, linkedList->capacity * 2);
+        IS_STAT_OK(resizeStat);
+    }
     listIndex freeIndex = linkedList->freeCell;
-    if (freeIndex == LAST_FREE_INDEX) return ERR_GET_CELL;
 
     *newIndex = freeIndex;
 
@@ -339,6 +383,10 @@ err_t Erase(listResources * linkedList, listIndex position) {
 
     linkedList->size--;
 
+    if (linkedList->capacity > DEFAULT_CAPACITY && linkedList->size < linkedList->capacity / 4) {
+        ListResize(linkedList, linkedList->capacity / 2);
+    }
+
     LIST_VERIFY(linkedList, stderr);
 
     return ERR_OK;
@@ -352,10 +400,8 @@ err_t PushAfter(listResources * linkedList, listElem_t value, listIndex position
     LIST_VERIFY(linkedList, stderr);
     
     listIndex newIndex = -1;
-    if (GetFreeCell(linkedList, &newIndex) != ERR_OK) {
-        printf("Error of searching a free cell\n");
-        return ERR_PUSHFRONT;
-    }
+    err_t cellStat = GetFreeCell(linkedList, &newIndex);
+    IS_STAT_OK(cellStat);
 
     listIndex oldNext = linkedList->List[position].next;
 
