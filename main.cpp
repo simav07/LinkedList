@@ -63,8 +63,9 @@ const listElem_t LIST_POISON      = NAN;
 const ssize_t    FREE_FLAG        = -1;
 const ssize_t    LAST_FREE_INDEX  = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
+const size_t     MAX_FILENAME_LEN = 80;
 
-static char pictureFolder[80] = "graphs";
+char pictureFolder[MAX_FILENAME_LEN] = "graphs";
 
 bool IsPoison(double number);
 
@@ -121,31 +122,17 @@ int main() {
 
     ListDump(&linkedList, 0, htmlStream);
 
-    for (int i = 100; i < 105; i++) {
-
-        PushFront(&linkedList, i);
-
-        ListDump(&linkedList, i, htmlStream);
-    }
-
-    PushBack(&linkedList, 111);
-    ListDump(&linkedList, 222, htmlStream);
-    
-    PushBack(&linkedList, 112);
-    ListDump(&linkedList, 223, htmlStream);
-
-    PushAfter(&linkedList, 69, 1);
+    PushFront(&linkedList, 100);
     ListDump(&linkedList, 1, htmlStream);
-    PushAfter(&linkedList, 67, 1);
+    PushFront(&linkedList, 200);
     ListDump(&linkedList, 2, htmlStream);
-    
-    Erase(&linkedList, 4);
+    PushFront(&linkedList, 300);
     ListDump(&linkedList, 3, htmlStream);
-    
-    PushBefore(&linkedList, 666, 5);
+
+    PushBack(&linkedList, 400);
     ListDump(&linkedList, 4, htmlStream);
-    
-    Insert(&linkedList, 999, 7);
+
+    Erase(&linkedList, 3);
     ListDump(&linkedList, 5, htmlStream);
     
     LIST_VERIFY(&linkedList, htmlStream);
@@ -543,7 +530,7 @@ err_t GeneratePictureName(char ** pictureName, size_t count) {
 
     ASSERT(pictureName);
 
-    char newName[64] = "";
+    char newName[MAX_FILENAME_LEN] = "";
     time_t mytime = time(NULL);
     struct tm * now = localtime(&mytime);
 
@@ -610,7 +597,7 @@ void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex 
 
     listIndex next = linkedList->List[i].next;
     listIndex prev = linkedList->List[i].prev;
-    listIndex back = linkedList->capacity;  // Drawing-only copy of cell 0.
+    listIndex back = linkedList->capacity;
 
     if (next != FREE_FLAG) {
         if (next < 0 || next >= back) {
