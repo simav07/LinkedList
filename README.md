@@ -31,6 +31,8 @@ Fast doubly linked list, implemented as an array of structures. The complexity o
 
 # Debug
 
-Macro **VERIFY** activates ListVerify - a function what checking all possible errors with list. Example of working this feature: 
+1. Macro **VERIFY** activates ListVerify - a function what checking all possible errors with list. Example of working this feature: 
+
+2. Macro **LISTDUMP** activates writing a state of the list to file. In my case, an HTML file with name: *"year|mon|day_hours|minutes_sec-sys_code.html"*
 
 !! Picture with example of working verification

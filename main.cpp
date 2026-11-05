@@ -30,6 +30,12 @@ typedef int     err_t;
 
 #define LIST_ELEM_FORMAT "%lg"
 
+#ifdef LISTDUMP
+#define LIST_DUMP(linkedList, stream) ListDump(linkedList, stream)
+#else
+#define LIST_DUMP(linkedList, stream) (void)0
+#endif
+
 #ifdef VERIFY
 #define LIST_VERIFY(linkedList, stream) do { \
                                             err_t errStat = CheckListErrors(linkedList, stream, __func__, __LINE__); \
@@ -120,20 +126,31 @@ int main() {
     err_t htmlStat = PrepareHTML(&htmlStream);
     IS_STAT_OK(htmlStat);
 
-    ListDump(&linkedList, htmlStream);
+    // ListDump(&linkedList, htmlStream);
+    LIST_DUMP(&linkedList, htmlStream);
 
     PushFront(&linkedList, 100);
-    ListDump(&linkedList, htmlStream);
+    LIST_DUMP(&linkedList, htmlStream);
+
+    //ListDump(&linkedList, htmlStream);
     PushFront(&linkedList, 200);
-    ListDump(&linkedList, htmlStream);
+    LIST_DUMP(&linkedList, htmlStream);
+    
+    //ListDump(&linkedList, htmlStream);
     PushFront(&linkedList, 300);
-    ListDump(&linkedList, htmlStream);
+    LIST_DUMP(&linkedList, htmlStream);
+    
+    //ListDump(&linkedList, htmlStream);
 
     PushBack(&linkedList, 400);
-    ListDump(&linkedList, htmlStream);
+    LIST_DUMP(&linkedList, htmlStream);
+    
+    //ListDump(&linkedList, htmlStream);
 
     Erase(&linkedList, 3);
-    ListDump(&linkedList, htmlStream);
+    LIST_DUMP(&linkedList, htmlStream);
+    
+    //ListDump(&linkedList, htmlStream);
     
     LIST_VERIFY(&linkedList, htmlStream);
     
