@@ -4,6 +4,8 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <direct.h>
+#include <process.h>
 
 #include "include/colors.h"
 #include "include/errors.h"
@@ -56,9 +58,7 @@ const ssize_t    FREE_FLAG        = -1;
 const ssize_t    LAST_FREE_INDEX  = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
 
-const char FOLDER_WITH_PICTURES[]      = "graphs";
-const char FILE_SCRIPT_FOR_GRAPHVIZ[]  = "graph.dot";
-const char DUMP_FILENAME[]             = "dump.html";
+static char pictureFolder[80] = "graphs";
 
 bool IsPoison(double number);
 
@@ -87,7 +87,7 @@ err_t CheckListErrors(const listResources * linkedList,
                       const int line);
     
 err_t ListDump(const listResources * linkedList, size_t count, FILE * stream);
-err_t PrepareHTML(const char * filename, FILE ** stream);
+err_t PrepareHTML(FILE ** stream);
 
 err_t GeneratePictureName(char ** pictureName, size_t count);
 err_t GetPicturePath(const char * sourceFolder, const char * pictureName, char ** picturePath);
@@ -109,10 +109,8 @@ int main() {
     err_t prepareStat = ListCtor(&linkedList);
     IS_STAT_OK(prepareStat);
 
-    system("del /f /q \"graphs\\*.*\"");
-
     FILE * htmlStream = NULL;
-    err_t htmlStat = PrepareHTML(DUMP_FILENAME, &htmlStream);
+    err_t htmlStat = PrepareHTML(&htmlStream);
     IS_STAT_OK(htmlStat);
 
     ListDump(&linkedList, 0, htmlStream);
@@ -188,10 +186,25 @@ err_t ListCtor(listResources * linkedList) {
     return ERR_OK;
 }
 
-err_t PrepareHTML(const char * filename, FILE ** stream) {
+err_t PrepareHTML(FILE ** stream) {
 
-    ASSERT(filename);
+    ASSERT(stream);
+    _mkdir("html");
+    _mkdir("graphs");
 
+    time_t now = time(NULL);
+    struct tm * date = localtime(&now);
+    if (date == NULL) return ERR_HTML;
+
+    char reportName[64] = "";
+    snprintf(reportName, sizeof(reportName), "%04d%02d%02d_%02d%02d_%02d%02d-%d",
+             date->tm_year + 1900, date->tm_mon + 1, date->tm_mday,
+             date->tm_hour, date->tm_min, date->tm_min, date->tm_sec, _getpid());
+    snprintf(pictureFolder, sizeof(pictureFolder), "graphs/%s", reportName);
+    if (_mkdir(pictureFolder) != 0) return ERR_HTML;
+
+    char filename[80] = "";
+    snprintf(filename, sizeof(filename), "html/%s.html", reportName);
     FILE * htmlStream = fopen(filename, "w");
     if (htmlStream == NULL) {
         PRINT_DEBUG("html error\n");
@@ -530,7 +543,7 @@ err_t ListDump(const listResources * linkedList, size_t count, FILE * stream) {
     err_t nameStat = GeneratePictureName(&pictureName, count);
     IS_STAT_OK(nameStat);
 
-    err_t pathStat = GetPicturePath(FOLDER_WITH_PICTURES, pictureName, &picturePath);
+    err_t pathStat = GetPicturePath(pictureFolder, pictureName, &picturePath);
     IS_STAT_OK(pathStat);
 
     err_t getGraphStat = GetObjectGraph(linkedList, picturePath);
@@ -590,20 +603,21 @@ err_t GetObjectGraph(const listResources * linkedList, char * pictureName) {
     ASSERT(linkedList);
     ASSERT(pictureName);
 
-    FILE * stream = fopen(FILE_SCRIPT_FOR_GRAPHVIZ, "w");
+    char scriptPath[96];
+    snprintf(scriptPath, sizeof(scriptPath), "%s/graph.dot", pictureFolder);
+    FILE * stream = fopen(scriptPath, "w");
     if (stream == NULL) return ERR_FILEOPEN;
 
     MakeGraphvizScript(stream, linkedList);
     fclose(stream);
 
-    size_t commandLen = 20 + strlen(FILE_SCRIPT_FOR_GRAPHVIZ) + strlen(pictureName);
+    size_t commandLen = 20 + strlen(scriptPath) + strlen(pictureName);
     char command[commandLen] = "";
-    int printStat = snprintf(command, commandLen, "dot %s -Tpng -o %s", FILE_SCRIPT_FOR_GRAPHVIZ, pictureName);
+    int printStat = snprintf(command, commandLen, "dot %s -Tpng -o %s", scriptPath, pictureName);
     if (printStat > commandLen || printStat <= 0) return ERR_SNPRINTF;
 
-    system("cd graphs");
     int sysStat = system(command);
-    if (sysStat == -1) return ERR_SYSTEM;
+    if (sysStat != 0) return ERR_SYSTEM;
 
     return ERR_OK;      
 }
@@ -685,7 +699,7 @@ void InsertObjectGraph(FILE * stream, const char * picturePath) {
     ASSERT(stream);
     ASSERT(picturePath);
 
-    fprintf(stream, "<img src=\"%s\" style=\"width: 60%;\">\n", picturePath);
+    fprintf(stream, "<img src=\"../%s\" style=\"width: 60%%;\">\n", picturePath);
 
 }
 
