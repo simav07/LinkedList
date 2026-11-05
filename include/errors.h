@@ -20,6 +20,7 @@ enum ERRORS {
     ERR_HTML,
     ERR_HEAD,
     ERR_TAIL,
+    ERR_FREE_INDEX,
 };
 
 #endif

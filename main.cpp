@@ -330,8 +330,12 @@ err_t Erase(listResources * linkedList, listIndex position) {
     linkedList->List[linkedList->List[position].prev].next = linkedList->List[position].next;
     linkedList->List[linkedList->List[position].next].prev = linkedList->List[position].prev;
 
-    linkedList->List[position].next = FREE_FLAG;
+    // linkedList->List[position].next = FREE_FLAG;
+    // linkedList->List[position].prev = FREE_FLAG;
+
     linkedList->List[position].prev = FREE_FLAG;
+    linkedList->List[position].next = linkedList->freeCell;
+    linkedList->freeCell = position;
 
     linkedList->size--;
 
