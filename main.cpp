@@ -126,29 +126,22 @@ int main() {
     PushFront(&linkedList, 100);
     LIST_DUMP(&linkedList, htmlStream);
 
-    //ListDump(&linkedList, htmlStream);
     PushFront(&linkedList, 200);
     LIST_DUMP(&linkedList, htmlStream);
     
-    //ListDump(&linkedList, htmlStream);
     PushFront(&linkedList, 300);
     LIST_DUMP(&linkedList, htmlStream);
     
-    //ListDump(&linkedList, htmlStream);
-
     PushBack(&linkedList, 400);
     LIST_DUMP(&linkedList, htmlStream);
 
-    linkedList.List[1].next = 666;
+    // linkedList.List[1].next = 666;
+    linkedList.List[1].next = 0;
     LIST_DUMP(&linkedList, htmlStream);
     
-    //ListDump(&linkedList, htmlStream);
-
     Erase(&linkedList, 3);
     LIST_DUMP(&linkedList, htmlStream);
-    
-    //ListDump(&linkedList, htmlStream);
-    
+        
     LIST_VERIFY(&linkedList, htmlStream);
     
     fclose(htmlStream);
@@ -459,9 +452,10 @@ err_t CheckListErrors(  const listResources * linkedList,
 
 err_t ListVerity(const listResources * linkedList) {
 
-    // TODO: more if
-
     ASSERT(linkedList);
+
+    if (linkedList == NULL || linkedList->List == NULL) return ERR_LIST;
+    if (linkedList->capacity == 0) return ERR_SIZE;
     
     listIndex start     = SYS_CELL_INDEX;
     size_t    size      = linkedList->size;
@@ -473,6 +467,11 @@ err_t ListVerity(const listResources * linkedList) {
 
     if (size >= capacity) return ERR_SIZE;
     if (freeIndex != -1 && freeIndex <= 0) return ERR_FREE_INDEX;
+    if (freeIndex != LAST_FREE_INDEX && (size_t)freeIndex >= capacity) return ERR_FREE_INDEX;
+    if ((freeIndex == LAST_FREE_INDEX) != (size == capacity - 1)) return ERR_FREE_INDEX;
+    if (freeIndex != LAST_FREE_INDEX && linkedList->List[freeIndex].prev != FREE_FLAG) return ERR_FREE_INDEX;
+    if (freeIndex != LAST_FREE_INDEX && !IsPoison(linkedList->List[freeIndex].value)) return ERR_FREE_INDEX;
+    if ((size_t)end >= capacity) return ERR_HEAD;
     if (!IsPoison(linkedList->List[SYS_CELL_INDEX].value)) return ERR_SYS_CELL;
 
 
@@ -486,15 +485,16 @@ err_t ListVerity(const listResources * linkedList) {
         listIndex newNext = linkedList->List[currIndex].next;
 
         if (!(newNext >= 0 && newNext < capacity)) return ERR_DISRUPT;
+        if (linkedList->List[newNext].prev != currIndex) return ERR_DISRUPT;
 
         currIndex = linkedList->List[currIndex].next;
         count++;
     }
 
     if (count != size) return ERR_DISRUPT;
+    if (end != currIndex) return ERR_DISRUPT;
 
     return ERR_OK;
-
 }
 
 const char * GetErrorDescription(err_t errorCode) {
