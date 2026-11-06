@@ -45,12 +45,7 @@ Use `ListCtor` before working with a list and `ListDtor` when finished. Compare 
 
 For a list with two values, the occupied ring can be represented as follows. The two `SYS` boxes represent the same cell.
 
-```mermaid
-flowchart LR
-    S["[0] SYS"] <--> A["[1] 100"]
-    A <--> B["[2] 200"]
-    B <--> R["[0] SYS"]
-```
+
 
 2. Each call to `LIST_DUMP` saves a snapshot to an HTML file, including the graph, a table of cells and list metadata.
 3. The complexity of finding an available memory cell is *O(1)*. This is implemented using a singly linked list of free elements.
