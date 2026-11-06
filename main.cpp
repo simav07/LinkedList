@@ -211,6 +211,10 @@ err_t PrepareHTML(FILE ** stream) {
         return ERR_HTML;
     }
     fprintf(htmlStream, "<pre>\n");
+    fprintf(htmlStream, "<style>body { margin: 32px; } "
+                        "h2 { color: #111e2c; border-bottom: "
+                        "1px solid #01121f; padding-bottom: 6px; } "
+                        "</style>\n<pre>\n");
     
     *stream = htmlStream;
 
@@ -640,9 +644,11 @@ void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex 
         } else {
             listIndex to = (next == 0 && i != 0) ? back : next;
             bool paired = linkedList->List[next].prev == i;
-            if (i != to) fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", i, to);
-            fprintf(stream, "n%zd:e -> n%zd:w [constraint=false, %s];\n",
-                    i, to, paired ? "dir=both" : "color=\"#FF0000\"");
+            if (paired && i != to) fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", i, to);
+            if (paired)
+                fprintf(stream, "n%zd:e -> n%zd:w [constraint=false, dir=both];\n", i, to);
+            else
+                fprintf(stream, "n%zd -> n%zd [constraint=false, color=\"#FF0000\"];\n", i, to);
         }
     }
 
@@ -650,8 +656,10 @@ void WriteGraphLinks(FILE * stream, const listResources * linkedList, listIndex 
     listIndex from = (i == 0 && prev > 0) ? back : i;
     if (prev < 0 || prev >= back)
         fprintf(stream, "n%zd -> \"invalid %zd\" [color=\"#FF0000\"];\n", from, prev);
-    else if (linkedList->List[prev].next != i)
-        fprintf(stream, "n%zd:w -> n%zd:e [constraint=false, color=\"#FF0000\"];\n", from, prev);
+    else if (linkedList->List[prev].next != i) {
+        fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", prev, from);
+        fprintf(stream, "n%zd -> n%zd [constraint=false, color=\"#FF0000\"];\n", from, prev);
+    }
 }
 
 void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
@@ -662,7 +670,8 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
     fprintf(stream, "digraph {\nrankdir=LR;\nranksep=0.5;\nsplines=ortho;\n"
                     "bgcolor=\"#FFFFFF\";\n"
                     "edge [color=\"#000000\", penwidth=2.0,];\n"
-                    "node [color=\"#000000\", fontcolor=\"#000000\", penwidth=2.0, shape=record, fontname=\"Helvetica-Bold\", style=filled, fillcolor=\"#EEF4FF\"];\n");
+                    "node [color=\"#000000\", fontcolor=\"#000000\", penwidth=2.0, shape=record, "
+                    "fontname=\"Helvetica-Bold\", style=filled, fillcolor=\"#EEF4FF\"];\n");
 
     const listMember sys = linkedList->List[SYS_CELL_INDEX];
 
