@@ -63,7 +63,7 @@ const listElem_t LIST_POISON      = NAN;
 const ssize_t    FREE_FLAG        = -1;
 const ssize_t    LAST_FREE_INDEX  = -1;
 const ssize_t    SYS_CELL_INDEX   = 0;
-const size_t     MAX_FILENAME_LEN = 80;
+const size_t     MAX_FILENAME_LEN = 128;
 
 char pictureFolder[MAX_FILENAME_LEN] = "graphs";
 
@@ -196,14 +196,14 @@ err_t PrepareHTML(FILE ** stream) {
     struct tm * date = localtime(&now);
     if (date == NULL) return ERR_HTML;
 
-    char reportName[64] = "";
+    char reportName[MAX_FILENAME_LEN] = "";
     snprintf(reportName, sizeof(reportName), "%04d%02d%02d_%02d%02d_%02d%02d-%d",
              date->tm_year + 1900, date->tm_mon + 1, date->tm_mday,
              date->tm_hour, date->tm_min, date->tm_min, date->tm_sec, _getpid());
     snprintf(pictureFolder, sizeof(pictureFolder), "graphs/%s", reportName);
     if (_mkdir(pictureFolder) != 0) return ERR_HTML;
 
-    char filename[80] = "";
+    char filename[MAX_FILENAME_LEN] = "";
     snprintf(filename, sizeof(filename), "html/%s.html", reportName);
     FILE * htmlStream = fopen(filename, "w");
     if (htmlStream == NULL) {
@@ -359,9 +359,11 @@ err_t Erase(listResources * linkedList, listIndex position) {
     if (IsPoison(linkedList->List[position].value)) return ERR_ERASE;
 
     linkedList->List[position].value = LIST_POISON;
+    listIndex next = linkedList->List[position].next;
+    listIndex prev = linkedList->List[position].prev;
 
-    linkedList->List[linkedList->List[position].prev].next = linkedList->List[position].next;
-    linkedList->List[linkedList->List[position].next].prev = linkedList->List[position].prev;
+    linkedList->List[prev].next = next;
+    linkedList->List[next].prev = prev;
 
     linkedList->List[position].prev = FREE_FLAG;
     linkedList->List[position].next = linkedList->freeCell;
@@ -440,7 +442,6 @@ err_t CheckListErrors(  const listResources * linkedList,
     ASSERT(funcname);
 
     err_t listStatus = ListVerity(linkedList);
-
     if (listStatus == ERR_OK) return ERR_OK;
 
     fprintf(stream, "___________________________________________________________\n");
@@ -469,14 +470,16 @@ err_t ListVerity(const listResources * linkedList) {
     err_t     getFStat  = GetFront(linkedList, &end);
     IS_STAT_OK(getFStat);
 
-    if (size >= capacity) return ERR_SIZE;
-    if (freeIndex != -1 && freeIndex <= 0) return ERR_FREE_INDEX;
+    if (size >= capacity)                                              return ERR_SIZE;
+    if (freeIndex != -1 && freeIndex <= 0)                             return ERR_FREE_INDEX;
     if (freeIndex != LAST_FREE_INDEX && (size_t)freeIndex >= capacity) return ERR_FREE_INDEX;
-    if ((freeIndex == LAST_FREE_INDEX) != (size == capacity - 1)) return ERR_FREE_INDEX;
-    if (freeIndex != LAST_FREE_INDEX && linkedList->List[freeIndex].prev != FREE_FLAG) return ERR_FREE_INDEX;
-    if (freeIndex != LAST_FREE_INDEX && !IsPoison(linkedList->List[freeIndex].value)) return ERR_FREE_INDEX;
-    if ((size_t)end >= capacity) return ERR_HEAD;
-    if (!IsPoison(linkedList->List[SYS_CELL_INDEX].value)) return ERR_SYS_CELL;
+    if ((freeIndex == LAST_FREE_INDEX) != (size == capacity - 1))      return ERR_FREE_INDEX;
+    if (freeIndex != LAST_FREE_INDEX &&
+        linkedList->List[freeIndex].prev != FREE_FLAG)                 return ERR_FREE_INDEX;
+    if (freeIndex != LAST_FREE_INDEX &&
+        !IsPoison(linkedList->List[freeIndex].value))                  return ERR_FREE_INDEX;
+    if ((size_t)end >= capacity)                                       return ERR_HEAD;
+    if (!IsPoison(linkedList->List[SYS_CELL_INDEX].value))             return ERR_SYS_CELL;
 
 
     listIndex currIndex = start;
@@ -691,13 +694,16 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
 
         if (i != 0 && cell.prev == FREE_FLAG) {
             fprintf(stream, "n%zd [fillcolor=\"#D3D3D3\"];\n", i);
+
             if (lastFree == FREE_FLAG) {
                 fprintf(stream, "{ rank=same; n0; n%zd; }\n"
                                 "freeLabel [shape=plain, style=\"\", fontsize=18, label=\"Free cells\"];\n"
                                 "freeLabel -> n%zd [style=invis, weight=100];\n", i, i);
                 fprintf(stream, "{ rank=same; FREE [shape=Mrecord, fillcolor=\"#eae43c8d\"];"
                                 "n%zd; } FREE -> n%zd:n;\n", i, i); }
+            
             else fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", lastFree, i);
+            
             lastFree = i;
         }
         else WriteGraphLinks(stream, linkedList, i);
