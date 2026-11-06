@@ -43,9 +43,7 @@ Use `ListCtor` before working with a list and `ListDtor` when finished. Compare 
 
 1. Dump with object graph of the list. Right connections between elements drawn as double-headed arrows. Incorrect connections drawn as red one-way arrows. Available memory cells are drawn separately. The list is looped back to a system cell.
 
-For a list with two values, the occupied ring can be represented as follows. The two `SYS` boxes represent the same cell.
-
-
+![List Dump](screenshots/example.png)
 
 2. Each call to `LIST_DUMP` saves a snapshot to an HTML file, including the graph, a table of cells and list metadata.
 3. The complexity of finding an available memory cell is *O(1)*. This is implemented using a singly linked list of free elements.
