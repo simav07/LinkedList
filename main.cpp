@@ -1,9 +1,3 @@
-/*
-
-TODO: error descriptions
-
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -145,7 +139,7 @@ int main() {
     PushBack(&linkedList, 400);
     LIST_DUMP(&linkedList, htmlStream);
 
-    linkedList.List[1].next = 100;
+    linkedList.List[1].next = 666;
     LIST_DUMP(&linkedList, htmlStream);
     
     //ListDump(&linkedList, htmlStream);
@@ -686,12 +680,14 @@ void MakeGraphvizScript(FILE * stream, const listResources * linkedList) {
         fprintf(stream, "} | {prev = %zd | %lg | next = %zd}\"];\n", cell.prev, cell.value, cell.next);
         if (i == 0) fprintf(stream, "n0 [fillcolor=\"#7EA46D\"];\n");
 
-        if (i != 0 /* && cell.next == FREE_FLAG */ && cell.prev == FREE_FLAG) {
+        if (i != 0 && cell.prev == FREE_FLAG) {
             fprintf(stream, "n%zd [fillcolor=\"#D3D3D3\"];\n", i);
-            if (lastFree == FREE_FLAG)
+            if (lastFree == FREE_FLAG) {
                 fprintf(stream, "{ rank=same; n0; n%zd; }\n"
                                 "freeLabel [shape=plain, style=\"\", fontsize=18, label=\"Free cells\"];\n"
                                 "freeLabel -> n%zd [style=invis, weight=100];\n", i, i);
+                fprintf(stream, "{ rank=same; FREE [shape=Mrecord, fillcolor=\"#eae43c8d\"];"
+                                "n%zd; } FREE -> n%zd:n;\n", i, i); }
             else fprintf(stream, "n%zd -> n%zd [style=invis, weight=100];\n", lastFree, i);
             lastFree = i;
         }
