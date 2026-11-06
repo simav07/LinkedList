@@ -19,7 +19,7 @@ The current source uses Windows functions for creating folders and naming report
 From the project directory, compile and run the demonstration in PowerShell:
 
 ```powershell
-g++ -std=gnu++20 -DVERIFY -DLISTDUMP -DMYDEBUG main.cpp -o list.exe
+g++ -DVERIFY -DLISTDUMP -DMYDEBUG main.cpp -o list.exe
 .\list.exe
 ```
 
